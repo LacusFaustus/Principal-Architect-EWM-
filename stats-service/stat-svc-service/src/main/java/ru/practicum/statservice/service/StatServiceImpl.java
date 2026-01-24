@@ -46,7 +46,6 @@ public class StatServiceImpl implements StatService {
         LocalDateTime endTime = LocalDateTime.parse(end, formatter);
         List<ViewStatsDto> stats;
 
-        // Если uris пустой или null, передаем null в репозиторий
         List<String> urisParam = (uris == null || uris.isEmpty()) ? null : uris;
 
         if (unique) {
