@@ -1,12 +1,21 @@
 services:
   stats-service:
+    container_name: stats-service
     build:
       context: ./stats-service/stat-svc-service
     ports:
       - "9090:9090"
+    depends_on:
+      stats-db:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
 
   stats-db:
     image: postgres:16.1
+    container_name: stats-db
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: stats
       POSTGRES_PASSWORD: 12345
@@ -17,15 +26,23 @@ services:
       interval: 5s
       retries: 10
 
-
   ewm-service:
+    container_name: ewm-service
     build:
       context: ./ewm-service
     ports:
       - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker  # Добавлено
+    depends_on:
+      - stats-service  # Добавлено
+      - ewm-db
 
   ewm-db:
     image: postgres:16.1
+    container_name: ewm-db
+    ports:
+      - "5433:5432"
     environment:
       POSTGRES_USER: ewm
       POSTGRES_PASSWORD: 12345
