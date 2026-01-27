@@ -10,13 +10,13 @@ import java.time.LocalDateTime;
 
 @Slf4j
 @RestControllerAdvice
-public class ClientHandler {
+public class ErrorHandler {
 
     @ExceptionHandler(RuntimeException.class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-    public ErrorResponse handleStatClientException(RuntimeException ex) {
+    public ApiError handleStatClientException(RuntimeException ex) {
         log.error("Внутренняя ошибка сервера: ", ex);
-        return new ErrorResponse(LocalDateTime.now(), HttpStatus.SERVICE_UNAVAILABLE.value(),
+        return new ApiError(LocalDateTime.now(), HttpStatus.SERVICE_UNAVAILABLE.value(),
                 "Stats Service Unavailable", ex.getMessage());
 
     }
