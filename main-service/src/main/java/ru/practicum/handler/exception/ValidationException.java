@@ -1,4 +1,4 @@
-package ru.practicum.handler;
+package ru.practicum.handler.exception;
 
 public class ValidationException extends RuntimeException {
     public ValidationException(String message) {

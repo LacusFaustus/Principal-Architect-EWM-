@@ -6,6 +6,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import ru.practicum.handler.exception.NotFoundException;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -18,35 +19,18 @@ import java.util.List;
 public class ErrorHandler {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ApiError handleException(Exception exception) {
-        log.error("Server error: ", exception);
-        StringWriter stringWriter = new StringWriter();
-        PrintWriter printWriter = new PrintWriter(stringWriter);
-        exception.printStackTrace(printWriter);
-        String stackTrace = stringWriter.toString();
-
-        return new ApiError(List.of(stackTrace), exception.getMessage(), "Server error", HttpStatus.INTERNAL_SERVER_ERROR.toString(),
-                LocalDateTime.now().format(FORMATTER));
-
-    }
-
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ApiError handleNotFound(final RuntimeException exception) {
+    public ApiError handleNotFound(final NotFoundException exception) {
         log.error("NotFoundError: {}", exception.getMessage());
 
-        ApiError error = handleException(exception);
-        error.setReason("The required object was not found.");
-        error.setStatus(HttpStatus.NOT_FOUND.toString());
-
-        return error;
+        return new ApiError(getStackTrace(exception), exception.getMessage(),
+                "The required object was not found.", HttpStatus.NOT_FOUND.toString(), LocalDateTime.now().format(FORMATTER));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiError handleValidationExceptions(MethodArgumentNotValidException exception) {
+    public ApiError handleValidationExceptions(final MethodArgumentNotValidException exception) {
         List<String> errors = exception.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -58,36 +42,25 @@ public class ErrorHandler {
 
         log.error("ValidationError: {}", errorMessage);
 
-        ApiError error = handleException(exception);
-        error.setMessage(errorMessage);
-        error.setReason("Incorrectly made request.");
-        error.setStatus(HttpStatus.BAD_REQUEST.toString());
-
-        return error;
+        return new ApiError(getStackTrace(exception), errorMessage,
+                "Incorrectly made request.", HttpStatus.BAD_REQUEST.toString(), LocalDateTime.now().format(FORMATTER));
     }
 
-    /*@ExceptionHandler(DataIntegrityViolationException.class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public ApiError handleConflictException(DataIntegrityViolationException exception, HttpStatus status) {
-        log.error("BadRequestException: ", exception);
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ApiError handleException(Exception exception) {
+        log.error("Server error: {}", exception.getMessage());
 
-        String constraintName = extractConstraintName(exception);
+        return new ApiError(getStackTrace(exception), exception.getMessage(), "Server error",
+                HttpStatus.INTERNAL_SERVER_ERROR.toString(), LocalDateTime.now().format(FORMATTER));
 
-        ApiError error = handleException(exception, status);
-        error.setReason("Integrity constraint has been violated.");
-        error.setMessage("Could not execute statement; SQL [n/a]; constraint " + constraintName +
-                "; nested exception is org.hibernate.exception.ConstraintViolationException: could not execute statement");
-
-        return error;
     }
 
-    private String extractConstraintName(DataIntegrityViolationException exception) {
-        if (exception.getCause() instanceof ConstraintViolationException) {
-            ConstraintViolationException cve =
-                    (ConstraintViolationException) exception.getCause();
-            return cve.getConstraintName();
-        }
+    private List<String> getStackTrace(Exception exception) {
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        exception.printStackTrace(printWriter);
 
-        return null;
-    } */
+        return List.of(stringWriter.toString());
+    }
 }

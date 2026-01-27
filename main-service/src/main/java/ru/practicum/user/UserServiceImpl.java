@@ -6,7 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.handler.NotFoundException;
+import ru.practicum.handler.exception.NotFoundException;
 import ru.practicum.user.dto.NewUserRequest;
 import ru.practicum.user.dto.UserDto;
 import ru.practicum.user.mapper.UserMapper;
@@ -49,12 +49,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Page<UserDto> getUsers(List<Long> ids, Pageable pageable) {
-        log.info("GET users with pageable");
+        log.info("GET users");
 
         Page<UserDto> users = userRepository.findUserByIdIn(ids, pageable)
                 .map(userMapper::mapToUserDto);
 
-        log.info("FIND users with pageable: size={}", users.getTotalElements());
+        log.info("FIND users: size={}", users.getTotalElements());
 
         return users;
     }
