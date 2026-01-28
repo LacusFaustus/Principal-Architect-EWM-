@@ -80,7 +80,12 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findByIdAndInitiatorId(eventId, userId)
                 .orElseThrow(() -> new NotFoundException("Event ID=" + eventId + " not found for user ID=" + userId));
 
-        return eventMapper.toEventFullDto(event, 0L, 0L);
+        // Получаем статистику просмотров
+        Map<Long, Long> views = getEventsViews(List.of(event));
+
+        return eventMapper.toEventFullDto(event,
+                views.getOrDefault(eventId, 0L),
+                getConfirmedRequests(eventId));
     }
 
     @Override
@@ -188,12 +193,12 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public void saveStats(HttpServletRequest request) {
-        NewEndpointHitDto endpointHitDto = NewEndpointHitDto.builder()
-                .app("ewm-main-service")
-                .uri(request.getRequestURI())
-                .ip(request.getRemoteAddr())
-                .timestamp(LocalDateTime.now())
-                .build();
+        NewEndpointHitDto endpointHitDto = new NewEndpointHitDto(
+                "ewm-main-service",
+                request.getRequestURI(),
+                request.getRemoteAddr(),
+                LocalDateTime.now()
+        );
 
         statClient.saveHit(endpointHitDto);
     }

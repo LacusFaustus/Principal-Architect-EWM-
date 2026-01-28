@@ -2,6 +2,7 @@ package ru.practicum.event.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.BadRequestException;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import ru.practicum.event.service.EventService;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @RestController
 @AllArgsConstructor
 @RequestMapping("/events")
@@ -46,6 +48,7 @@ public class PublicEventController {
 
             return ResponseEntity.ok(events);
         } catch (RuntimeException ex) {
+            log.error("Error in getEventsByPublicFilters: {}", ex.getMessage());
             throw new BadRequestException();
         }
     }
@@ -62,6 +65,7 @@ public class PublicEventController {
 
             return ResponseEntity.ok(event);
         } catch (RuntimeException ex) {
+            log.error("Error in getEventById for event {}: {}", id, ex.getMessage());
             throw new BadRequestException();
         }
     }
