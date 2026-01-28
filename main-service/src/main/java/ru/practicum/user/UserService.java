@@ -14,4 +14,6 @@ public interface UserService {
 
     Page<UserDto> getUsers(List<Long> ids, Pageable pageable);
 
+    Page<UserDto> getAllUsers(Pageable pageable);
+
 }

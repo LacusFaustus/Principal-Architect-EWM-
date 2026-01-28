@@ -1,6 +1,8 @@
 package ru.practicum.handler;
 
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -26,6 +28,33 @@ public class ErrorHandler {
 
         return new ApiError(getStackTrace(exception), exception.getMessage(),
                 "The required object was not found.", HttpStatus.NOT_FOUND.toString(), LocalDateTime.now().format(FORMATTER));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiError handleUniqueConstraint(final DataIntegrityViolationException exception) {
+        String message = "Entity already exists. Unique constraint violation.";
+
+        if (exception.getCause() instanceof ConstraintViolationException cve) {
+
+            if (cve.getMessage().contains("UQ_CATEGORY_NAME")) {
+                message = "Category with this name already exists";
+            }
+
+            if (cve.getMessage().contains("UQ_USER_EMAIL")) {
+                message = "Category with this email already exists";
+            }
+        }
+
+        log.error("Conflict: {}", message);
+
+        return new ApiError(
+                getStackTrace(exception),
+                message,
+                "Integrity constraint has been violated.",
+                HttpStatus.CONFLICT.toString(),
+                LocalDateTime.now().format(FORMATTER)
+        );
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
