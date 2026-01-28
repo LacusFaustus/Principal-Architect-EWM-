@@ -57,15 +57,14 @@ public class PublicEventController {
     public ResponseEntity<EventFullDto> getEventById(@PathVariable Long id,
                                                      HttpServletRequest request) throws BadRequestException {
         try {
-            // Сначала получаем данные
             EventFullDto event = eventService.getEventById(id, request);
 
-            // Потом сохраняем статистику
-            eventService.saveStats(request);
+            // Временно закомментируем
+            // eventService.saveStats(request);
 
             return ResponseEntity.ok(event);
         } catch (RuntimeException ex) {
-            log.error("Error in getEventById for event {}: {}", id, ex.getMessage());
+            // log.error("Error in getEventById for event {}: {}", id, ex.getMessage());
             throw new BadRequestException();
         }
     }

@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.event.dto.*;
 import ru.practicum.event.service.EventService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 
 @RestController
@@ -23,6 +25,7 @@ public class PrivateEventController {
         try {
             return ResponseEntity.status(HttpStatus.CREATED).body(eventService.createEvent(userId, newEventDto));
         } catch (RuntimeException ex) {
+            // Просто выбрасываем исключение без логов
             throw new BadRequestException();
         }
     }
