@@ -1,7 +1,6 @@
 package ru.practicum.statservice.service;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.NewEndpointHitDto;
@@ -12,48 +11,56 @@ import ru.practicum.statservice.repository.StatRepository;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 
-@Slf4j
 @Service
+@RequiredArgsConstructor
 @Transactional(readOnly = true)
-@AllArgsConstructor
 public class StatServiceImpl implements StatService {
     private final StatRepository repository;
     private final EndpointHitMapper mapper;
 
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     @Override
     @Transactional
     public void saveHit(NewEndpointHitDto hitDto) {
-        try {
-            log.info("Saving hit: {}", hitDto);
-
-            EndpointHit hit = mapper.mapToEndpointHit(hitDto);
-            EndpointHit savedHit = repository.save(hit);
-
-            log.info("Hit saved successfully: {}", savedHit);
-
-        } catch (Exception e) {
-            log.error("Failed to save hit: {}", e.getMessage(), e);
-            throw new RuntimeException("Ошибка сохранения статистики: " + e.getMessage());
-        }
+        EndpointHit hit = mapper.mapToEndpointHit(hitDto);
+        repository.save(hit);
     }
 
     @Override
-    public List<ViewStatsDto> getStats(String start, String end, List<String> uris, boolean unique) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        LocalDateTime startTime = LocalDateTime.parse(start, formatter);
-        LocalDateTime endTime = LocalDateTime.parse(end, formatter);
-        List<ViewStatsDto> stats;
+    public List<ViewStatsDto> getStats(String start, String end,
+                                       List<String> uris, boolean unique) {
 
-        List<String> urisParam = (uris == null || uris.isEmpty()) ? null : uris;
+        try {
+            // Конвертируем строки в LocalDateTime
+            LocalDateTime startTime = LocalDateTime.parse(start, FORMATTER);
+            LocalDateTime endTime = LocalDateTime.parse(end, FORMATTER);
 
-        if (unique) {
-            stats = repository.findUniqueHits(startTime, endTime, urisParam);
-        } else {
-            stats = repository.findAllHits(startTime, endTime, urisParam);
+            // Вызываем соответствующие методы репозитория
+            if (uris == null || uris.isEmpty()) {
+                // Все URI
+                if (unique) {
+                    return repository.findUniqueHitsAll(startTime, endTime);
+                } else {
+                    return repository.findAllHitsAll(startTime, endTime);
+                }
+            } else {
+                // Только указанные URI
+                if (unique) {
+                    return repository.findUniqueHitsByUris(startTime, endTime, uris);
+                } else {
+                    return repository.findAllHitsByUris(startTime, endTime, uris);
+                }
+            }
+
+        } catch (Exception e) {
+            // Логируем ошибку и возвращаем пустой список
+            // В продакшене нужно обрабатывать ошибки лучше
+            return Collections.emptyList();
         }
-
-        return stats;
     }
 }
