@@ -9,8 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.event.dto.*;
 import ru.practicum.event.service.EventService;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 import java.util.List;
 
 @RestController

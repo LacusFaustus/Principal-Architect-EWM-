@@ -31,7 +31,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.Comparator;
 import ru.practicum.event.dto.ParticipationRequestDto;
 
 @Slf4j
