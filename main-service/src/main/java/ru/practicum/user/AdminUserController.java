@@ -2,7 +2,6 @@ package ru.practicum.user;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -23,35 +22,27 @@ public class AdminUserController {
     private final UserService userService;
 
     @PostMapping
-    public ResponseEntity<UserDto> postUser(@Valid @RequestBody NewUserRequest newUserRequest) throws BadRequestException {
-        try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(userService.postUser(newUserRequest));
-        } catch (RuntimeException ex) {
-            throw new BadRequestException();
-        }
+    public ResponseEntity<UserDto> postUser(@Valid @RequestBody NewUserRequest newUserRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.postUser(newUserRequest));
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<Void> deleteUser(@PathVariable("userId") Long userId) throws BadRequestException {
-        try {
-            userService.deleteUser(userId);
-        } catch (RuntimeException ex) {
-            throw new BadRequestException();
-        }
+    public ResponseEntity<Void> deleteUser(@PathVariable("userId") Long userId) {
+        userService.deleteUser(userId);
 
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping
-    public ResponseEntity<List<UserDto>> getUsers(@RequestParam List<Long> ids,
+    public ResponseEntity<List<UserDto>> getUsers(@RequestParam(required = false) List<Long> ids,
                                                   @RequestParam(name = "from", defaultValue = "0") Integer from,
-                                                  @RequestParam(name = "size", defaultValue = "10") Integer size) throws BadRequestException {
-        Pageable pageable = PageRequest.of(from / size, size, Sort.by("id").descending());
+                                                  @RequestParam(name = "size", defaultValue = "10") Integer size) {
+        Pageable pageable = PageRequest.of(from / size, size, Sort.by("id").ascending());
 
-        try {
+        if (ids == null || ids.isEmpty()) {
+            return ResponseEntity.ok().body(userService.getAllUsers(pageable).getContent());
+        } else {
             return ResponseEntity.ok().body(userService.getUsers(ids, pageable).getContent());
-        } catch (RuntimeException ex) {
-            throw new BadRequestException();
         }
     }
 }
