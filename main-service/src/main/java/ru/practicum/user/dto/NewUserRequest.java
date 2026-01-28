@@ -7,10 +7,11 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class NewUserRequest {
+    @NotBlank(message = "empty or null email")
     @Email(message = "invalid email")
     @Size(min = 6, max = 254)
     private String email;
-    @NotBlank
+    @NotBlank(message = "empty or null name")
     @Size(min = 2, max = 250)
     private String name;
 }

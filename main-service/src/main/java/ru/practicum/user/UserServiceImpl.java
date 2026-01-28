@@ -59,6 +59,18 @@ public class UserServiceImpl implements UserService {
         return users;
     }
 
+    @Override
+    public Page<UserDto> getAllUsers(Pageable pageable) {
+        log.info("GET ALL users");
+
+        Page<UserDto> users = userRepository.findAll(pageable)
+                .map(userMapper::mapToUserDto);
+
+        log.info("FIND ALL users: size={}", users.getTotalElements());
+
+        return users;
+    }
+
     private void checkUserExists(Long userId) {
         userRepository.findById(userId)
                 .orElseThrow(() -> {

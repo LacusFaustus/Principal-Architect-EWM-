@@ -7,6 +7,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class MainServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(MainServiceApplication.class, args);
-        System.out.println("EWM-SERVICE RUNNING");
+        System.out.println("MAIN-SERVICE RUNNING");
     }
 }
