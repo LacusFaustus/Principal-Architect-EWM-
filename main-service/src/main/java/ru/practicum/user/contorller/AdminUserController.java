@@ -1,4 +1,4 @@
-package ru.practicum.user;
+package ru.practicum.user.contorller;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.user.service.UserService;
 import ru.practicum.user.dto.NewUserRequest;
 import ru.practicum.user.dto.UserDto;
 

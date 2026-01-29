@@ -1,4 +1,4 @@
-package ru.practicum.category;
+package ru.practicum.category.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.category.repository.CategoryRepository;
 import ru.practicum.category.dto.NewCategoryRequest;
 import ru.practicum.category.dto.CategoryDto;
 import ru.practicum.category.dto.UpdateCategoryDto;

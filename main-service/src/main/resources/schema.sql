@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS events
     state              VARCHAR(20)                             NOT NULL,
     title              VARCHAR(120)                            NOT NULL,
     CONSTRAINT pk_event PRIMARY KEY (id),
-    CONSTRAINT fk_event_category FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE CASCADE,
+    CONSTRAINT fk_event_category FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE RESTRICT,
     CONSTRAINT fk_event_user FOREIGN KEY (initiator_id) REFERENCES users (id) ON DELETE CASCADE
 );
 

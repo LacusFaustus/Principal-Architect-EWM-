@@ -1,4 +1,4 @@
-package ru.practicum.user;
+package ru.practicum.user.repository;
 
 import org.springframework.data.domain.Page;
 

@@ -1,4 +1,4 @@
-package ru.practicum.user;
+package ru.practicum.user.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
