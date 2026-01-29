@@ -2,7 +2,6 @@ package ru.practicum.compilations.dto;
 
 import org.mapstruct.*;
 import ru.practicum.compilations.model.Compilation;
-import ru.practicum.event.mapper.EventMapper;
 
 import java.util.List;
 
