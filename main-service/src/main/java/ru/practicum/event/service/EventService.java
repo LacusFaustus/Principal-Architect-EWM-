@@ -1,28 +1,29 @@
 package ru.practicum.event.service;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.data.domain.Pageable;
 import ru.practicum.event.dto.*;
 
 import java.util.List;
 
 public interface EventService {
-    // Создание события пользователем
-    EventFullDto createEvent(Long userId, NewEventDto newEventDto);
-
     // Получение событий пользователя
-    List<EventShortDto> getUserEvents(Long userId, PageParams pageParams);
+    List<EventShortDto> getEvents(Long userId, Pageable pageable);
+
+    // Создание события пользователем
+    EventFullDto postEvent(Long userId, NewEventDto newEventDto);
 
     // Получение конкретного события пользователя
-    EventFullDto getUserEvent(Long userId, Long eventId);
+    EventFullDto getEvent(Long userId, Long eventId);
 
     // Обновление события пользователем
-    EventFullDto updateEventByUser(Long userId, Long eventId, UpdateEventUserRequest updateEventUserRequest);
+    EventFullDto patchEventByUser(Long userId, Long eventId, UpdateEventUserRequest updateEventUserRequest);
 
     // Получение событий по фильтрам администратором
     List<EventFullDto> getEventsByAdminFilters(EventParams params);
 
     // Обновление события администратором
-    EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest updateEventAdminRequest);
+    EventFullDto patchEventByAdmin(Long eventId, UpdateEventAdminRequest updateEventAdminRequest);
 
     // Получение событий по публичным фильтрам
     List<EventShortDto> getEventsByPublicFilters(PublicEventParams params, HttpServletRequest request);
@@ -31,7 +32,7 @@ public interface EventService {
     EventFullDto getEventById(Long eventId, HttpServletRequest request);
 
     // Создание заявки на участие
-    ParticipationRequestDto createParticipationRequest(Long userId, Long eventId);
+    ParticipationRequestDto postRequest(Long userId, Long eventId);
 
     // Отмена заявки на участие пользователем
     ParticipationRequestDto cancelParticipationRequest(Long userId, Long requestId);

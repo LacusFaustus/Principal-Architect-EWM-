@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import ru.practicum.handler.exception.ConflictException;
 import ru.practicum.handler.exception.NotFoundException;
 
 import java.io.PrintWriter;
@@ -28,6 +29,15 @@ public class ErrorHandler {
 
         return new ApiError(getStackTrace(exception), exception.getMessage(),
                 "The required object was not found.", HttpStatus.NOT_FOUND.toString(), LocalDateTime.now().format(FORMATTER));
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiError handleNotFound(final ConflictException exception) {
+        log.error("ConflictError: {}", exception.getMessage());
+
+        return new ApiError(getStackTrace(exception), exception.getMessage(),
+                "For the requested operation the conditions are not met.", HttpStatus.CONFLICT.toString(), LocalDateTime.now().format(FORMATTER));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

@@ -2,7 +2,6 @@ package ru.practicum.event.controller;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import org.apache.coyote.BadRequestException;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,23 +29,16 @@ public class AdminEventController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
             @RequestParam(name = "from", defaultValue = "0") Integer from,
-            @RequestParam(name = "size", defaultValue = "10") Integer size) throws BadRequestException {
-        try {
+            @RequestParam(name = "size", defaultValue = "10") Integer size) {
+
             PageParams pageParams = new PageParams(from, size);
             EventParams params = new EventParams(users, states, categories, rangeStart, rangeEnd, pageParams);
             return ResponseEntity.ok(eventService.getEventsByAdminFilters(params));
-        } catch (RuntimeException ex) {
-            throw new BadRequestException();
-        }
     }
 
     @PatchMapping("/{eventId}")
     public ResponseEntity<EventFullDto> updateEventByAdmin(@PathVariable Long eventId,
-                                                           @Valid @RequestBody UpdateEventAdminRequest updateEventAdminRequest) throws BadRequestException {
-        try {
-            return ResponseEntity.ok(eventService.updateEventByAdmin(eventId, updateEventAdminRequest));
-        } catch (RuntimeException ex) {
-            throw new BadRequestException();
-        }
+                                                           @Valid @RequestBody UpdateEventAdminRequest updateEventAdminRequest) {
+            return ResponseEntity.ok(eventService.patchEventByAdmin(eventId, updateEventAdminRequest));
     }
 }

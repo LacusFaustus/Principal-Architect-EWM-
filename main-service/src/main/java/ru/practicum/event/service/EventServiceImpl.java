@@ -10,7 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.category.model.Category;
-import ru.practicum.category.CategoryRepository;
+import ru.practicum.category.repository.CategoryRepository;
 import ru.practicum.event.dto.*;
 import ru.practicum.event.mapper.EventMapper;
 import ru.practicum.event.model.Event;
@@ -20,17 +20,17 @@ import ru.practicum.event.model.StateActionUser;
 import ru.practicum.event.repository.EventRepository;
 import ru.practicum.handler.exception.ConflictException;
 import ru.practicum.handler.exception.NotFoundException;
-import ru.practicum.handler.exception.ValidationException;
 import ru.practicum.client.StatClient;
 import ru.practicum.dto.NewEndpointHitDto;
 import ru.practicum.dto.ViewStatsDto;
 import ru.practicum.user.model.User;
-import ru.practicum.user.UserRepository;
+import ru.practicum.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.concurrent.ConcurrentHashMap;
+
 import ru.practicum.event.dto.ParticipationRequestDto;
 
 @Slf4j
@@ -44,65 +44,73 @@ public class EventServiceImpl implements EventService {
     private final EventMapper eventMapper;
     private final StatClient statClient;
 
+    //PrivateUserEventController
     @Override
-    @Transactional
-    public EventFullDto createEvent(Long userId, NewEventDto newEventDto) {
-        log.info("Creating event for user ID: {}", userId);
+    public List<EventShortDto> getEvents(Long userId, Pageable pageable) {
+        log.info("GET events for user ID: {}", userId);
 
-        validateEventDate(newEventDto.getEventDate(), 2, "Event date must be at least 2 hours from now");
-
-        User user = findUserById(userId);
-        Category category = findCategoryById(newEventDto.getCategory());
-
-        Event event = eventMapper.toEvent(newEventDto, category, user);
-        Event savedEvent = eventRepository.save(event);
-
-        log.info("Event created with ID: {}", savedEvent.getId());
-        return eventMapper.toEventFullDto(savedEvent, 0L, 0L);
-    }
-
-    @Override
-    public List<EventShortDto> getUserEvents(Long userId, PageParams pageParams) {
-        log.info("Getting events for user ID: {}", userId);
-
-        findUserById(userId);
-        Pageable pageable = createPageable(pageParams);
+        checkUserExists(userId);
         Page<Event> events = eventRepository.findAllByInitiatorId(userId, pageable);
+        log.debug("FIND events size: {}", events.getTotalElements());
 
+        Map<Long, Long> views = getEventsViews(events.getContent());
+        log.debug("FIND views: {}", events.getTotalElements());
+
+        //TODO добавить получение confirmedRequests
         return events.getContent().stream()
-                .map(event -> eventMapper.toEventShortDto(event, 0L, 0L))
+                .map(event -> eventMapper.toEventShortDto(event, views.getOrDefault(event.getId(), 0L), 0L))
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public EventFullDto getUserEvent(Long userId, Long eventId) {
-        log.info("Getting event ID: {} for user ID: {}", eventId, userId);
-
-        findUserById(userId);
-        Event event = eventRepository.findByIdAndInitiatorId(eventId, userId)
-                .orElseThrow(() -> new NotFoundException("Event ID=" + eventId + " not found for user ID=" + userId));
-
-        // Получаем статистику просмотров
-        Map<Long, Long> views = getEventsViews(List.of(event));
-
-        return eventMapper.toEventFullDto(event,
-                views.getOrDefault(eventId, 0L),
-                getConfirmedRequests(eventId));
-    }
-
+    //PrivateUserEventController
     @Override
     @Transactional
-    public EventFullDto updateEventByUser(Long userId, Long eventId, UpdateEventUserRequest updateRequest) {
-        log.info("Updating event ID: {} by user ID: {}", eventId, userId);
+    public EventFullDto postEvent(Long userId, NewEventDto newEventDto) {
+        log.info("POST event: {}", newEventDto);
 
-        findUserById(userId);
+        validateEventDate(newEventDto.getEventDate(), 2);
+        User user = checkUserExists(userId);
+        Category category = checkCategoryExists(newEventDto.getCategory());
+
+        Event event = eventMapper.toEvent(newEventDto, category, user);
+        log.debug("MAP event: {}", event);
+        Event savedEvent = eventRepository.save(event);
+
+        log.info("SAVED event: {}", savedEvent);
+
+        return eventMapper.toEventFullDto(savedEvent, 0L, 0L);
+    }
+
+    //PrivateUserEventController
+    @Override
+    public EventFullDto getEvent(Long userId, Long eventId) {
+        log.info("GET event: ID={}", eventId);
+
+        checkUserExists(userId);
+        Event event = eventRepository.findByIdAndInitiatorId(eventId, userId)
+                .orElseThrow(() -> new NotFoundException("Event ID=" + eventId + " not found for user ID=" + userId));
+        log.debug("FIND event: {}", event);
+
+        Map<Long, Long> views = getEventsViews(List.of(event));
+
+        //TODO добавить получение confirmedRequests
+        return eventMapper.toEventFullDto(event, views.getOrDefault(eventId, 0L), getConfirmedRequests(eventId));
+    }
+
+    //PrivateUserEventController
+    @Override
+    @Transactional
+    public EventFullDto patchEventByUser(Long userId, Long eventId, UpdateEventUserRequest updateRequest) {
+        log.info("USER PATCH event ID:{}, UPDATE: {}", eventId, updateRequest);
+
+        checkUserExists(userId);
         Event event = eventRepository.findByIdAndInitiatorId(eventId, userId)
                 .orElseThrow(() -> new NotFoundException("Event ID=" + eventId + " not found for user ID=" + userId));
 
         validateEventStateForUserUpdate(event);
 
         if (updateRequest.getEventDate() != null) {
-            validateEventDate(updateRequest.getEventDate(), 2, "Event date must be at least 2 hours from now");
+            validateEventDate(updateRequest.getEventDate(), 2);
         }
 
         updateEventFields(event, updateRequest);
@@ -130,21 +138,20 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest updateRequest) {
-        log.info("Updating event ID: {} by admin", eventId);
+    public EventFullDto patchEventByAdmin(Long eventId, UpdateEventAdminRequest updateRequest) {
+        log.info("ADMIN PATCH event ID: {} by UPDATE: {}", eventId, updateRequest);
 
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event ID=" + eventId + " not found"));
+        Event event = checkEventExists(eventId);
 
         if (updateRequest.getEventDate() != null) {
-            validateEventDate(updateRequest.getEventDate(), 1, "Event date must be at least 1 hour from publication time");
+            validateEventDate(updateRequest.getEventDate(), 1);
         }
 
         handleAdminStateAction(event, updateRequest.getStateAction());
         updateEventFields(event, updateRequest);
 
         Event updatedEvent = eventRepository.save(event);
-        log.info("Event ID: {} updated by admin", eventId);
+        log.info("SAVE: event={}", updatedEvent);
 
         return eventMapper.toEventFullDto(updatedEvent, 0L, 0L);
     }
@@ -234,19 +241,34 @@ public class EventServiceImpl implements EventService {
     }
 
     // Вспомогательные методы
-    private User findUserById(Long userId) {
+    private User checkUserExists(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User ID=" + userId + " not found"));
+                .orElseThrow(() -> {
+                    log.error("User {} not found", userId);
+                    return new NotFoundException("User ID=" + userId + " not found");
+                });
     }
 
-    private Category findCategoryById(Long categoryId) {
-        return categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new NotFoundException("Category ID=" + categoryId + " not found"));
+    private Category checkCategoryExists(Long catId) {
+        return categoryRepository.findById(catId)
+                .orElseThrow(() -> {
+                    log.error("Category {} not found", catId);
+                    return new NotFoundException("Category ID=" + catId + " not found");
+                });
     }
 
-    private void validateEventDate(LocalDateTime eventDate, int hours, String message) {
+    private Event checkEventExists(Long eventId) {
+        return eventRepository.findById(eventId)
+                .orElseThrow(() -> {
+                    log.error("Event {} not found", eventId);
+                    return new NotFoundException("Event ID=" + eventId + " not found");
+                });
+    }
+
+    //Валидация времени +2 часа от текущего для POST и PATCH
+    private void validateEventDate(LocalDateTime eventDate, int hours) {
         if (eventDate.isBefore(LocalDateTime.now().plusHours(hours))) {
-            throw new ValidationException(message);
+            throw new ConflictException("Event date must be at least " + hours + " hours from now");
         }
     }
 
@@ -299,12 +321,13 @@ public class EventServiceImpl implements EventService {
                                     Integer participantLimit, Boolean requestModeration, String title) {
         if (annotation != null) event.setAnnotation(annotation);
         if (categoryId != null) {
-            Category category = findCategoryById(categoryId);
+            Category category = checkCategoryExists(categoryId);
             event.setCategory(category);
         }
         if (description != null) event.setDescription(description);
         if (eventDate != null) event.setEventDate(eventDate);
-        if (location != null) event.setLocation(new ru.practicum.location.model.LocationEntity(location.getLat(), location.getLon()));
+        if (location != null)
+            event.setLocation(new ru.practicum.location.model.LocationEntity(location.getLat(), location.getLon()));
         if (paid != null) event.setPaid(paid);
         if (participantLimit != null) event.setParticipantLimit(participantLimit);
         if (requestModeration != null) event.setRequestModeration(requestModeration);
@@ -374,20 +397,16 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public ParticipationRequestDto createParticipationRequest(Long userId, Long eventId) {
-        log.info("Creating participation request for user ID: {} to event ID: {}", userId, eventId);
+    public ParticipationRequestDto postRequest(Long userId, Long eventId) {
+        log.info("POST request for user ID={} to event ID={}", userId, eventId);
 
-        // Проверяем существование пользователя и события
-        User user = findUserById(userId);
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event ID=" + eventId + " not found"));
+        checkUserExists(userId);
+        Event event = checkEventExists(eventId);
 
-        // Проверяем, что событие опубликовано
         if (event.getState() != EventState.PUBLISHED) {
             throw new ConflictException("Cannot participate in unpublished event");
         }
 
-        // Проверяем, что пользователь не является инициатором события
         if (event.getInitiator().getId().equals(userId)) {
             throw new ConflictException("Initiator cannot participate in own event");
         }
@@ -441,7 +460,7 @@ public class EventServiceImpl implements EventService {
         log.info("Updating request status for event ID: {} by user ID: {}", eventId, userId);
 
         // Проверяем существование пользователя
-        User user = findUserById(userId);
+        checkUserExists(userId);
 
         // Проверяем существование события и что пользователь - инициатор
         Event event = eventRepository.findById(eventId)
@@ -472,7 +491,7 @@ public class EventServiceImpl implements EventService {
         log.info("Getting participation requests for event ID: {} by user ID: {}", eventId, userId);
 
         // Проверяем существование пользователя
-        findUserById(userId);
+        checkUserExists(userId);
 
         // Проверяем существование события и что пользователь - инициатор
         Event event = eventRepository.findById(eventId)
@@ -491,7 +510,7 @@ public class EventServiceImpl implements EventService {
         log.info("Getting participation requests for user ID: {}", userId);
 
         // Проверяем существование пользователя
-        findUserById(userId);
+        checkUserExists(userId);
 
         // Временная реализация - возвращаем пустой список
         return List.of();

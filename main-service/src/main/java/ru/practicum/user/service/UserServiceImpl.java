@@ -1,4 +1,4 @@
-package ru.practicum.user;
+package ru.practicum.user.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.handler.exception.NotFoundException;
+import ru.practicum.user.repository.UserRepository;
 import ru.practicum.user.dto.NewUserRequest;
 import ru.practicum.user.dto.UserDto;
 import ru.practicum.user.mapper.UserMapper;
@@ -74,7 +75,7 @@ public class UserServiceImpl implements UserService {
     private void checkUserExists(Long userId) {
         userRepository.findById(userId)
                 .orElseThrow(() -> {
-                    log.warn("User {} not found", userId);
+                    log.error("User {} not found", userId);
                     return new NotFoundException("User ID=" + userId + " not found");
                 });
     }
