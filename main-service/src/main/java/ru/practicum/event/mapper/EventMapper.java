@@ -1,8 +1,11 @@
 package ru.practicum.event.mapper;
 
-import org.mapstruct.*;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import ru.practicum.category.model.Category;
-import ru.practicum.event.dto.*;
+import ru.practicum.event.dto.EventFullDto;
+import ru.practicum.event.dto.EventShortDto;
+import ru.practicum.event.dto.NewEventDto;
 import ru.practicum.event.model.Event;
 import ru.practicum.location.dto.Location;
 import ru.practicum.location.model.LocationEntity;
