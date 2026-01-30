@@ -10,6 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.event.dto.*;
 import ru.practicum.event.service.EventService;
+import ru.practicum.request.dto.ParticipationRequestDto;
+import ru.practicum.request.dto.RequestStatusUpdateDto;
+import ru.practicum.request.service.RequestService;
 
 import java.util.List;
 
@@ -18,6 +21,8 @@ import java.util.List;
 @RequestMapping("/users/{userId}")
 public class PrivateUserEventController {
     private final EventService eventService;
+    private final RequestService requestService;
+
 
     @GetMapping("/events")
     public ResponseEntity<List<EventShortDto>> getEvents(@PathVariable Long userId,
@@ -50,17 +55,14 @@ public class PrivateUserEventController {
     public ResponseEntity<List<ParticipationRequestDto>> getEventRequests(
             @PathVariable Long userId,
             @PathVariable Long eventId) {
-        // TODO: временная заглушка
-        return ResponseEntity.ok(List.of());
+        return ResponseEntity.ok().body(requestService.getEventRequests(userId, eventId));
     }
 
     @PatchMapping("/events/{eventId}/requests")
-    public ResponseEntity<EventRequestStatusUpdateResult> patchEventRequestsStatus(
+    public ResponseEntity<List<ParticipationRequestDto>> patchEventRequestsStatus(
             @PathVariable Long userId,
             @PathVariable Long eventId,
-            @RequestBody EventRequestStatusUpdateRequest updateRequest) {
-        // Временная заглушка
-        EventRequestStatusUpdateResult result = new EventRequestStatusUpdateResult();
-        return ResponseEntity.ok(result);
+            @Valid @RequestBody RequestStatusUpdateDto updateDto) {
+        return ResponseEntity.ok().body(requestService.patchEventRequestsStatus(userId, eventId, updateDto));
     }
 }

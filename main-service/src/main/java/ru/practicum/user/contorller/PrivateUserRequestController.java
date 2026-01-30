@@ -4,8 +4,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.event.dto.ParticipationRequestDto;
-import ru.practicum.event.service.EventService;
+import ru.practicum.request.dto.ParticipationRequestDto;
+import ru.practicum.request.service.RequestService;
 
 import java.util.List;
 
@@ -13,34 +13,25 @@ import java.util.List;
 @AllArgsConstructor
 @RequestMapping("/users/{userId}/requests")
 public class PrivateUserRequestController {
-    private final EventService eventService;
+    private final RequestService requestService;
 
     @PostMapping
-    public ResponseEntity<ParticipationRequestDto> createRequest(
+    public ResponseEntity<ParticipationRequestDto> postRequest(
             @PathVariable Long userId,
             @RequestParam Long eventId) {
-        ParticipationRequestDto request = eventService.postRequest(userId, eventId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(requestService.postRequest(userId, eventId));
     }
 
     @GetMapping
     public ResponseEntity<List<ParticipationRequestDto>> getUserRequests(@PathVariable Long userId) {
-        // TODO: временная заглушка
-        return ResponseEntity.ok(List.of());
+        return ResponseEntity.ok().body(requestService.getRequests(userId));
     }
 
     @PatchMapping("/{requestId}/cancel")
     public ResponseEntity<ParticipationRequestDto> cancelRequest(
             @PathVariable Long userId,
             @PathVariable Long requestId) {
-        // Временная реализация
-        ParticipationRequestDto request = new ParticipationRequestDto();
-        request.setId(requestId);
-        request.setRequester(userId);
-        request.setEvent(1L); // временное значение
-        request.setStatus("CANCELED");
-        request.setCreated(java.time.LocalDateTime.now());
-        return ResponseEntity.ok(request);
+        return ResponseEntity.ok().body(requestService.patchRequest(userId, requestId));
 
     }
 }
