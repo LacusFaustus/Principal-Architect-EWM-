@@ -1,10 +1,12 @@
 package ru.practicum.handler;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -33,11 +35,29 @@ public class ErrorHandler {
 
     @ExceptionHandler(ConflictException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ApiError handleNotFound(final ConflictException exception) {
+    public ApiError handleConflictException(final ConflictException exception) {
         log.error("ConflictError: {}", exception.getMessage());
 
         return new ApiError(getStackTrace(exception), exception.getMessage(),
                 "For the requested operation the conditions are not met.", HttpStatus.CONFLICT.toString(), LocalDateTime.now().format(FORMATTER));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleRequestParameterException(final MissingServletRequestParameterException exception) {
+        log.error("RequestParameterError: {}", exception.getMessage());
+
+        return new ApiError(getStackTrace(exception), exception.getMessage(),
+                "Required request parameter is not present.", HttpStatus.BAD_REQUEST.toString(), LocalDateTime.now().format(FORMATTER));
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleBadRequestException(final BadRequestException exception) {
+        log.error("BadRequestError: {}", exception.getMessage());
+
+        return new ApiError(getStackTrace(exception), exception.getMessage(),
+                "BadRequestError.", HttpStatus.BAD_REQUEST.toString(), LocalDateTime.now().format(FORMATTER));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

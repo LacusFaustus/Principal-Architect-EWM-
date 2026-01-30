@@ -18,6 +18,7 @@ import ru.practicum.event.model.EventState;
 import ru.practicum.event.model.StateActionAdmin;
 import ru.practicum.event.model.StateActionUser;
 import ru.practicum.event.repository.EventRepository;
+import ru.practicum.handler.exception.BadRequestException;
 import ru.practicum.handler.exception.ConflictException;
 import ru.practicum.handler.exception.NotFoundException;
 import ru.practicum.client.StatClient;
@@ -268,7 +269,7 @@ public class EventServiceImpl implements EventService {
     //Валидация времени +2 часа от текущего для POST и PATCH
     private void validateEventDate(LocalDateTime eventDate, int hours) {
         if (eventDate.isBefore(LocalDateTime.now().plusHours(hours))) {
-            throw new ConflictException("Event date must be at least " + hours + " hours from now");
+            throw new BadRequestException("Event date must be at least " + hours + " hours from now");
         }
     }
 
