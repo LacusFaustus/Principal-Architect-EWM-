@@ -8,7 +8,10 @@ import java.util.List;
 
 public interface RequestRepository extends JpaRepository<Request, Long> {
     List<Request> findByRequesterId(Long requesterId);
+
     List<Request> findByEventId(Long eventId);
-    Integer countByEventIdAndStatus(Long EventId, RequestState status);
+
+    Integer countByEventIdAndStatus(Long eventId, RequestState status);
+
     List<Request> findByIdInAndStatus(List<Long> ids, RequestState status);
 }
