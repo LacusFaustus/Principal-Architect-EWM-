@@ -5,17 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.ewm.compilation.dto.CompilationDto;
-import ru.practicum.ewm.compilation.dto.NewCompilationDto;
-import ru.practicum.ewm.compilation.dto.UpdateCompilationRequest;
-import ru.practicum.ewm.compilation.mapper.CompilationMapper;
-import ru.practicum.ewm.compilation.model.Compilation;
-import ru.practicum.ewm.compilation.repository.CompilationRepository;
-import ru.practicum.ewm.event.model.Event;
-import ru.practicum.ewm.event.repository.EventRepository;
-import ru.practicum.ewm.exception.NotFoundException;
+import ru.practicum.compilations.dto.*;
+import ru.practicum.compilations.model.Compilation;
+import ru.practicum.compilations.repository.CompilationRepository;
+import ru.practicum.event.model.Event;
+import ru.practicum.event.repository.EventRepository;
+import ru.practicum.handler.exception.NotFoundException;
 
 import java.util.HashSet;
 import java.util.List;
@@ -34,7 +32,7 @@ public class CompilationServiceImpl implements CompilationService {
     @Override
     public CompilationDto add(NewCompilationDto dto) {
         log.info("");
-        Compilation compilation = compilationMapper.toCompilation(dto);
+        Compilation compilation = compilationMapper.toModel(dto);
 
         if (dto.getEvents() != null && !dto.getEvents().isEmpty()) {
             Set<Event> events = new HashSet<>(eventRepository.findAllById(dto.getEvents()));
@@ -74,7 +72,7 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     @Override
-    public CompilationDto get(Long compId) {
+    public CompilationDto get(long compId) {
         log.info("");
 
         Compilation compilation = compilationRepository.findById(compId).orElseThrow(() -> new NotFoundException("Compilation not found"));
@@ -83,19 +81,26 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     @Override
-    public List<CompilationDto> getCompilations(Boolean pinned, Integer from, Integer size) {
-        log.info("");
+    public List<CompilationDto> getCompilations(CompilationSearchParam params) {
+        Pageable pageable = PageRequest.of(
+                params.getFrom() / params.getSize(),
+                params.getSize(),
+                Sort.by("id").ascending()
+        );
 
-        Pageable pageable = PageRequest.of(from / size, size);
-        Page<Compilation> compilations = compilationRepository.findAllWithFilter(pinned, pageable);
+        Page<Compilation> page;
+        if (params.getPinned() != null) {
+            page = compilationRepository.findByPinned(params.getPinned(), pageable);
+        } else {
+            page = compilationRepository.findAll(pageable);
+        }
 
-        log.info("Found {} compilations", compilations.getTotalElements());
-        return compilationMapper.toCompilationDtoList(compilations.getContent());
+        return compilationMapper.toCompilationDtoList(page.getContent());
     }
 
     @Override
     @Transactional
-    public void delete(Long compId) {
+    public void delete(long compId) {
         log.info("Deleting compilation with id: {}", compId);
 
         Compilation compilation = compilationRepository.findById(compId).orElseThrow(() -> new NotFoundException("Compilation with id=" + compId + " was not found"));

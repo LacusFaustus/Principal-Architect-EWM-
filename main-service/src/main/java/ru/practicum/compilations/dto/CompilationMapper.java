@@ -1,17 +1,17 @@
 package ru.practicum.compilations.dto;
 
 import org.mapstruct.*;
-import ru.practicum.ewm.compilation.dto.CompilationDto;
-import ru.practicum.ewm.compilation.dto.NewCompilationDto;
-import ru.practicum.ewm.compilation.dto.UpdateCompilationRequest;
-import ru.practicum.ewm.compilation.model.Compilation;
-import ru.practicum.ewm.event.dto.EventShortDto;
-import ru.practicum.ewm.event.mapper.EventMapper;
-import ru.practicum.ewm.event.model.Event;
+import ru.practicum.category.dto.CategoryDto;
+import ru.practicum.compilations.model.Compilation;
+import ru.practicum.event.dto.EventShortDto;
+import ru.practicum.event.mapper.EventMapper;
+import ru.practicum.event.model.Event;
+import ru.practicum.user.dto.UserShortDto;
 
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 
 @Mapper(componentModel = "spring", uses = {EventMapper.class})
 public interface CompilationMapper {
@@ -45,24 +45,29 @@ public interface CompilationMapper {
             return null;
         }
 
-        return EventShortDto.builder()
-                .id(event.getId())
-                .annotation(event.getAnnotation())
-                .category(event.getCategory() != null ?
-                        ru.practicum.ewm.category.dto.CategoryDto.builder()
-                                .id(event.getCategory().getId())
-                                .name(event.getCategory().getName())
-                                .build() : null)
-                .confirmedRequests(event.getConfirmedRequests())
-                .eventDate(event.getEventDate())
-                .initiator(event.getInitiator() != null ?
-                        ru.practicum.ewm.user.dto.UserShortDto.builder()
-                                .id(event.getInitiator().getId())
-                                .name(event.getInitiator().getName())
-                                .build() : null)
-                .paid(event.getPaid())
-                .title(event.getTitle())
-                .views(event.getViews())
-                .build();
+        EventShortDto dto = new EventShortDto();
+        dto.setId(event.getId());
+        dto.setAnnotation(event.getAnnotation());
+
+        if (event.getCategory() != null) {
+            CategoryDto categoryDto = new CategoryDto(event.getCategory().getId(), event.getCategory().getName());
+            dto.setCategory(categoryDto);
+        }
+
+
+        dto.setConfirmedRequests(0L);
+        dto.setEventDate(event.getEventDate());
+
+        if (event.getInitiator() != null) {
+            UserShortDto initiatorDto = new UserShortDto(event.getInitiator().getName(), event.getInitiator().getEmail());
+            dto.setInitiator(initiatorDto);
+        }
+
+        dto.setPaid(event.getPaid());
+        dto.setTitle(event.getTitle());
+
+        dto.setViews(0L);
+
+        return dto;
     }
 }
