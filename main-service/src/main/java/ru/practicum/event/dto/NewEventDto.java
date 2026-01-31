@@ -1,10 +1,7 @@
 package ru.practicum.event.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,6 +26,7 @@ public class NewEventDto {
     private String description;
 
     @NotNull
+    @Future
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime eventDate;
 
@@ -36,10 +34,15 @@ public class NewEventDto {
     private Location location;
 
     private Boolean paid = false;
+
+    @Min(0)
     private Integer participantLimit = 0;
+
     private Boolean requestModeration = true;
 
     @NotBlank
     @Size(min = 3, max = 120)
     private String title;
+
+    // Геттеры создаются автоматически благодаря @Data
 }
