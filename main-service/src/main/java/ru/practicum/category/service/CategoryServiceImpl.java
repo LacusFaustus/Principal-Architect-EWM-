@@ -13,6 +13,9 @@ import ru.practicum.category.dto.UpdateCategoryDto;
 import ru.practicum.category.mapper.CategoryMapper;
 import ru.practicum.category.model.Category;
 import ru.practicum.handler.exception.NotFoundException;
+import ru.practicum.handler.exception.ConflictException;
+
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -26,6 +29,12 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public CategoryDto postCategory(NewCategoryRequest newCategoryRequest) {
         log.info("POST category: {}", newCategoryRequest);
+
+        // Проверяем, нет ли уже категории с таким именем
+        if (categoryRepository.findByName(newCategoryRequest.getName()).isPresent()) {
+            log.error("Category with name '{}' already exists", newCategoryRequest.getName());
+            throw new ConflictException("Category with this name already exists");
+        }
 
         Category category = categoryMapper.mapToCategory(newCategoryRequest);
         log.debug("MAP category: {}", category);
@@ -51,7 +60,22 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = checkCategoryExists(catId);
         log.info("PATCH category: id={}, new name: {}", catId, updateCategoryDto);
 
-        category.setName(updateCategoryDto.getName());
+        String newName = updateCategoryDto.getName();
+
+        if (newName != null && !newName.equals(category.getName())) {
+            // Проверяем, не используется ли это имя другой категорией
+            Optional<Category> existingCategory = categoryRepository.findByName(newName);
+            if (existingCategory.isPresent()) {
+                log.error("Category with name '{}' already exists", newName);
+                throw new ConflictException("Category with this name already exists");
+            }
+        }
+
+        // Обновляем имя, если оно указано
+        if (newName != null) {
+            category.setName(newName);
+        }
+
         Category patchedCategory = categoryRepository.save(category);
         log.debug("PATCHED category: {}", patchedCategory);
 
@@ -87,8 +111,7 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryRepository.findById(catId)
                 .orElseThrow(() -> {
                     log.error("Category {} not found", catId);
-                    return new NotFoundException("Category ID=" + catId + " not found");
+                    return new NotFoundException("Category with id=" + catId + " was not found");
                 });
     }
 }
-

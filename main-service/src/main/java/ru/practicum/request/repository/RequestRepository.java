@@ -5,6 +5,7 @@ import ru.practicum.request.model.Request;
 import ru.practicum.request.model.RequestState;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface RequestRepository extends JpaRepository<Request, Long> {
     List<Request> findByRequesterId(Long requesterId);
@@ -14,4 +15,6 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
     Integer countByEventIdAndStatus(Long eventId, RequestState status);
 
     List<Request> findByIdInAndStatus(List<Long> ids, RequestState status);
+
+    Optional<Request> findByRequesterIdAndEventId(Long requesterId, Long eventId);
 }

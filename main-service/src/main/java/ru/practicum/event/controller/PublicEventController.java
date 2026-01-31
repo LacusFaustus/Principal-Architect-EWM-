@@ -3,7 +3,6 @@ package ru.practicum.event.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.BadRequestException;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,38 +33,27 @@ public class PublicEventController {
             @RequestParam(required = false) String sort,
             @RequestParam(name = "from", defaultValue = "0") Integer from,
             @RequestParam(name = "size", defaultValue = "10") Integer size,
-            HttpServletRequest request) throws BadRequestException {
-        try {
-            PageParams pageParams = new PageParams(from, size);
-            PublicEventParams params = new PublicEventParams(text, categories, paid, rangeStart,
-                    rangeEnd, onlyAvailable, sort, pageParams);
+            HttpServletRequest request) {
 
-            // Сначала получаем данные
-            List<EventShortDto> events = eventService.getEventsByPublicFilters(params, request);
-
-            // Потом сохраняем статистику
-            eventService.saveStats(request);
-
-            return ResponseEntity.ok(events);
-        } catch (RuntimeException ex) {
-            log.error("Error in getEventsByPublicFilters: {}", ex.getMessage());
-            throw new BadRequestException();
+        if (rangeStart != null && rangeEnd != null && rangeEnd.isBefore(rangeStart)) {
+            throw new ru.practicum.handler.exception.BadRequestException("rangeEnd cannot be before rangeStart");
         }
+
+        PageParams pageParams = new PageParams(from, size);
+        PublicEventParams params = new PublicEventParams(text, categories, paid, rangeStart,
+                rangeEnd, onlyAvailable, sort, pageParams);
+
+        List<EventShortDto> events = eventService.getEventsByPublicFilters(params, request);
+        eventService.saveStats(request);
+
+        return ResponseEntity.ok(events);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<EventFullDto> getEventById(@PathVariable Long id,
-                                                     HttpServletRequest request) throws BadRequestException {
-        try {
-            EventFullDto event = eventService.getEventById(id, request);
-
-            // Временно закомментируем
-            // eventService.saveStats(request);
-
-            return ResponseEntity.ok(event);
-        } catch (RuntimeException ex) {
-            // log.error("Error in getEventById for event {}: {}", id, ex.getMessage());
-            throw new BadRequestException();
-        }
+                                                     HttpServletRequest request) {
+        EventFullDto event = eventService.getEventById(id, request);
+        eventService.saveStats(request);
+        return ResponseEntity.ok(event);
     }
 }
