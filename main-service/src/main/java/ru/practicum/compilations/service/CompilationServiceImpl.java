@@ -29,13 +29,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Transactional(readOnly = true)
-public class CompilationService {
+public class CompilationServiceImpl implements CompilationService {
     private final CompilationRepository compilationRepository;
     private final EventRepository eventRepository;
     private final CompilationMapper compilationMapper;
     private final EventMapper eventMapper;
     private final StatClient statClient;
 
+    @Override
     @Transactional
     public CompilationDto add(NewCompilationDto newCompilationDto) {
         log.info("Adding new compilation: {}", newCompilationDto.getTitle());
@@ -53,6 +54,7 @@ public class CompilationService {
         return buildCompilationDto(savedCompilation);
     }
 
+    @Override
     @Transactional
     public CompilationDto update(long compId, UpdateCompilationRequest updateRequest) {
         log.info("Updating compilation with id: {}", compId);
@@ -79,6 +81,7 @@ public class CompilationService {
         return buildCompilationDto(updatedCompilation);
     }
 
+    @Override
     @Transactional
     public void delete(long compId) {
         log.info("Deleting compilation with id: {}", compId);
@@ -91,6 +94,7 @@ public class CompilationService {
         log.info("Compilation deleted: {}", compId);
     }
 
+    @Override
     public CompilationDto get(long compId) {
         log.info("Getting compilation with id: {}", compId);
 
@@ -100,6 +104,7 @@ public class CompilationService {
         return buildCompilationDto(compilation);
     }
 
+    @Override
     public List<CompilationDto> getCompilations(CompilationSearchParam params) {
         log.info("Getting compilations with params: pinned={}, from={}, size={}",
                 params.getPinned(), params.getFrom(), params.getSize());
