@@ -9,9 +9,10 @@ import ru.practicum.event.model.EventState;
 import ru.practicum.event.repository.EventRepository;
 import ru.practicum.handler.exception.ConflictException;
 import ru.practicum.handler.exception.NotFoundException;
+import ru.practicum.request.dto.EventRequestStatusUpdateResult;
 import ru.practicum.request.dto.NewRequestDto;
 import ru.practicum.request.dto.ParticipationRequestDto;
-import ru.practicum.request.dto.RequestStatusUpdateDto;
+import ru.practicum.request.dto.EventRequestStatusUpdateRequest;
 import ru.practicum.request.mapper.RequestMapper;
 import ru.practicum.request.model.Request;
 import ru.practicum.request.model.RequestState;
@@ -20,6 +21,7 @@ import ru.practicum.user.model.User;
 import ru.practicum.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -107,21 +109,24 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Transactional
-    public List<ParticipationRequestDto> patchEventRequestsStatus(Long userId, Long eventId, RequestStatusUpdateDto statusUpdateDto) {
+    public EventRequestStatusUpdateResult patchEventRequestsStatus(Long userId, Long eventId, EventRequestStatusUpdateRequest statusUpdateDto) {
         log.info("PATCH status requests ID={}", statusUpdateDto.getRequestIds());
 
         checkUserExists(userId);
         Event event = checkEventExists(eventId);
-        List<Request> requests = requestRepository.findByIdIn(statusUpdateDto.getRequestIds());
+        List<Long> ids = statusUpdateDto.getRequestIds().stream()
+                .map(Integer::longValue)
+                .toList();
+        List<Request> requests = requestRepository.findByIdIn(ids);
 
         if (requests.isEmpty()) {
-            return List.of();
+            return new EventRequestStatusUpdateResult();
         }
 
         checkRequestStatusForPatch(requests);
 
         Integer eventLimit = event.getParticipantLimit();
-        Integer eventConfirmRequests = checkEventLimit(event);
+        Long eventConfirmRequests = checkEventLimit(event);
         RequestState newStatus = RequestState.valueOf(statusUpdateDto.getStatus());
 
         if (newStatus.equals(RequestState.REJECTED)) {
@@ -134,7 +139,7 @@ public class RequestServiceImpl implements RequestService {
             if (event.getParticipantLimit() == 0) {
                 requests.forEach(request -> request.setStatus(newStatus));
             } else {
-                int availableSlots = eventLimit - eventConfirmRequests;
+                long availableSlots = eventLimit - eventConfirmRequests;
 
                 for (Request request : requests) {
                     if (availableSlots > 0) {
@@ -152,7 +157,24 @@ public class RequestServiceImpl implements RequestService {
                 .toList();
         log.info("UPDATED status requests ID={}", statusUpdateDto.getRequestIds());
 
-        return updatedRequests;
+        EventRequestStatusUpdateResult result = new EventRequestStatusUpdateResult();
+        List<ParticipationRequestDto> confirmedRequests = new ArrayList<>();
+        List<ParticipationRequestDto> rejectedRequests = new ArrayList<>();
+
+        for (ParticipationRequestDto requestDto : updatedRequests) {
+            if (requestDto.getStatus().equals("CONFIRMED")) {
+                confirmedRequests.add(requestDto);
+            }
+
+            if (requestDto.getStatus().equals("REJECTED")) {
+                rejectedRequests.add(requestDto);
+            }
+        }
+
+        result.setConfirmedRequests(confirmedRequests);
+        result.setRejectedRequests(rejectedRequests);
+
+        return result;
     }
 
     private User checkUserExists(Long userId) {
@@ -208,9 +230,10 @@ public class RequestServiceImpl implements RequestService {
         }
     }
 
-    private Integer checkEventLimit(Event event) {
+    private Long checkEventLimit(Event event) {
         Integer eventLimit = event.getParticipantLimit();
-        Integer eventConfirmRequests = requestRepository.countByEventIdAndStatusIn(event.getId(), List.of(RequestState.PENDING, RequestState.CONFIRMED));
+        Long eventConfirmRequests = requestRepository.countByEventIdAndStatusIn(event.getId(),
+                List.of(RequestState.PENDING, RequestState.CONFIRMED));
 
         if (eventLimit - eventConfirmRequests == 0) {
             log.error("Participant limit reached event ID={}", event.getId());

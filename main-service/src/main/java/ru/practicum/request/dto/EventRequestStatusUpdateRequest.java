@@ -11,9 +11,9 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RequestStatusUpdateDto {
+public class EventRequestStatusUpdateRequest {
     @NotEmpty
-    private List<Long> requestIds;
+    private List<Integer> requestIds;
     @NotBlank
     private String status;
 }
