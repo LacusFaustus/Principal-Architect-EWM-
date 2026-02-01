@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
+
     Page<Event> findAllByInitiatorId(Long userId, Pageable pageable);
 
     Optional<Event> findByIdAndInitiatorId(Long eventId, Long userId);
@@ -32,10 +33,9 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                          @Param("rangeEnd") LocalDateTime rangeEnd,
                                          Pageable pageable);
 
+
     @Query("""
             SELECT e FROM Event e
-            JOIN FETCH e.category
-            JOIN FETCH e.initiator
             WHERE e.state = 'PUBLISHED'
             AND (:text IS NULL OR
                  LOWER(e.annotation) LIKE LOWER(CONCAT('%', :text, '%')) OR
@@ -44,6 +44,9 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             AND (:paid IS NULL OR e.paid = :paid)
             AND (:rangeStart IS NULL OR e.eventDate >= :rangeStart)
             AND (:rangeEnd IS NULL OR e.eventDate <= :rangeEnd)
+            AND (:onlyAvailable = false OR e.participantLimit = 0 OR \
+                e.participantLimit > (SELECT COUNT(r) FROM Request r \
+                                      WHERE r.event.id = e.id AND r.status = 'CONFIRMED'))
             """)
     Page<Event> findEventsByPublicFilters(
             @Param("text") String text,
@@ -51,6 +54,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             @Param("paid") Boolean paid,
             @Param("rangeStart") LocalDateTime rangeStart,
             @Param("rangeEnd") LocalDateTime rangeEnd,
+            @Param("onlyAvailable") Boolean onlyAvailable,
             Pageable pageable
     );
 }
