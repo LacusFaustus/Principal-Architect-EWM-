@@ -31,6 +31,7 @@ public class Request {
     @JoinColumn(name = "event_id")
     private Event event;
 
+    @Enumerated(EnumType.STRING)
     private RequestState status;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

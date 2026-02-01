@@ -10,8 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.event.dto.*;
 import ru.practicum.event.service.EventService;
+import ru.practicum.request.dto.EventRequestStatusUpdateResult;
 import ru.practicum.request.dto.ParticipationRequestDto;
-import ru.practicum.request.dto.RequestStatusUpdateDto;
+import ru.practicum.request.dto.EventRequestStatusUpdateRequest;
 import ru.practicum.request.service.RequestService;
 
 import java.util.List;
@@ -59,10 +60,10 @@ public class PrivateUserEventController {
     }
 
     @PatchMapping("/events/{eventId}/requests")
-    public ResponseEntity<List<ParticipationRequestDto>> patchEventRequestsStatus(
+    public ResponseEntity<EventRequestStatusUpdateResult> patchEventRequestsStatus(
             @PathVariable Long userId,
             @PathVariable Long eventId,
-            @Valid @RequestBody RequestStatusUpdateDto updateDto) {
+            @Valid @RequestBody EventRequestStatusUpdateRequest updateDto) {
         return ResponseEntity.ok().body(requestService.patchEventRequestsStatus(userId, eventId, updateDto));
     }
 }
