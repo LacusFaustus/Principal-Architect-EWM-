@@ -128,7 +128,6 @@ public class CompilationServiceImpl implements CompilationService {
         }
 
         Map<Long, Long> viewsMap = getEventsViews(events);
-        
         Map<Long, Long> confirmedRequestsMap = getConfirmedRequests(events);
 
         List<EventShortDto> eventShortDtos = events.stream()
@@ -144,7 +143,6 @@ public class CompilationServiceImpl implements CompilationService {
     
     private Map<Long, Long> getEventsViews(List<Event> events) {
         Map<Long, Long> views = new HashMap<>();
-
         if (events.isEmpty()) {
             return views;
         }
@@ -181,7 +179,7 @@ public class CompilationServiceImpl implements CompilationService {
         Map<Long, Long> confirmedRequests = new HashMap<>();
         
         // Временная реализация - возвращаем 0 для всех событий
-        for (Event event : events) {
+        for(Event event : events) {
             confirmedRequests.put(event.getId(), 0L);
         }
         
