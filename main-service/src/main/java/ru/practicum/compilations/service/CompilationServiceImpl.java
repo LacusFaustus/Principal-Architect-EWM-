@@ -13,6 +13,7 @@ import ru.practicum.compilations.dto.NewCompilationDto;
 import ru.practicum.compilations.dto.UpdateCompilationRequest;
 import ru.practicum.compilations.dto.CompilationMapper;
 import ru.practicum.compilations.model.Compilation;
+import ru.practicum.compilations.service.CompilationService;
 import ru.practicum.compilations.repository.CompilationRepository;
 import ru.practicum.dto.ViewStatsDto;
 import ru.practicum.event.dto.EventShortDto;
