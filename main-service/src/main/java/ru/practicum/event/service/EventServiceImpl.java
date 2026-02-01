@@ -353,9 +353,7 @@ public class EventServiceImpl implements EventService {
     // === Helpers ===
 
     private Long getViews(Long eventId) {
-        Map<Long, Long> map = getViewsBatch(List.of(new Event() {{
-            setId(eventId);
-        }})); // Хак для использования batch метода
+        Map<Long, Long> map = getViewsBatch(List.of(new Event() {{setId(eventId);}}));
         return map.getOrDefault(eventId, 0L);
     }
 
