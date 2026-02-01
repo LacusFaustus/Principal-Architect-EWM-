@@ -3,15 +3,14 @@ package ru.practicum.compilations.dto;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
-import java.util.List;
+import java.util.Set;
 
 @Setter
 @Getter
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateCompilationRequest {
-    private List<Long> events;
+    private Set<Long> events;
 
     private Boolean pinned;
 
