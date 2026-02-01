@@ -9,7 +9,6 @@ import ru.practicum.compilations.model.Compilation;
 import java.util.List;
 
 public interface CompilationRepository extends JpaRepository<Compilation, Long> {
-    
     @Query("SELECT c FROM Compilation c WHERE :pinned IS NULL OR c.pinned = :pinned")
     List<Compilation> findAllByPinned(@Param("pinned") Boolean pinned, Pageable pageable);
 }
