@@ -119,7 +119,7 @@ public class CompilationServiceImpl implements CompilationService {
                 .map(this::buildCompilationDto)
                 .collect(Collectors.toList());
     }
-    
+
     private CompilationDto buildCompilationDto(Compilation compilation) {
         List<Event> events = new ArrayList<>(compilation.getEvents());
 
@@ -140,7 +140,7 @@ public class CompilationServiceImpl implements CompilationService {
 
         return compilationMapper.toCompilationDto(compilation, eventShortDtos);
     }
-    
+
     private Map<Long, Long> getEventsViews(List<Event> events) {
         Map<Long, Long> views = new HashMap<>();
         if (events.isEmpty()) {
