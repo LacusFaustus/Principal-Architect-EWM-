@@ -119,7 +119,7 @@ public class CompilationServiceImpl implements CompilationService {
                 .map(this::buildCompilationDto)
                 .collect(Collectors.toList());
     }
-
+    
     private CompilationDto buildCompilationDto(Compilation compilation) {
         List<Event> events = new ArrayList<>(compilation.getEvents());
 
