@@ -11,7 +11,7 @@ import ru.practicum.compilations.dto.CompilationDto;
 import ru.practicum.compilations.dto.CompilationSearchParam;
 import ru.practicum.compilations.dto.NewCompilationDto;
 import ru.practicum.compilations.dto.UpdateCompilationRequest;
-import ru.practicum.compilations.mapper.CompilationMapper;
+import ru.practicum.compilations.dto.CompilationMapper;
 import ru.practicum.compilations.model.Compilation;
 import ru.practicum.compilations.repository.CompilationRepository;
 import ru.practicum.dto.ViewStatsDto;
