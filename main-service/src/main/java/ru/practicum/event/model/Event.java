@@ -1,10 +1,7 @@
 package ru.practicum.event.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import ru.practicum.category.model.Category;
 import ru.practicum.location.model.LocationEntity;
 import ru.practicum.user.model.User;
@@ -15,6 +12,7 @@ import java.util.Objects;
 @Entity
 @Getter
 @Setter
+@ToString
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "events")
