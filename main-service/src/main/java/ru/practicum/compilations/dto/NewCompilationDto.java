@@ -4,16 +4,14 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
 @Setter
 @Getter
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class NewCompilationDto {
-    private List<Long> events = new ArrayList<>();
+    private Set<Long> events;
 
     private Boolean pinned = false;
 
