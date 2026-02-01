@@ -44,7 +44,12 @@ public class PublicEventController {
                 rangeEnd, onlyAvailable, sort, pageParams);
 
         List<EventShortDto> events = eventService.getEventsByPublicFilters(params, request);
-        eventService.saveStats(request);
+
+        try {
+            eventService.saveStats(request);
+        } catch (Exception e) {
+            log.warn("Stats service unavailable: {}", e.getMessage());
+        }
 
         return ResponseEntity.ok(events);
     }
