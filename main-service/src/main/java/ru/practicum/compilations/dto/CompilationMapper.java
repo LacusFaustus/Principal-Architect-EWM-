@@ -13,61 +13,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 
-@Mapper(componentModel = "spring", uses = {EventMapper.class})
+@Mapper(componentModel = "spring")
 public interface CompilationMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "events", ignore = true)
-    Compilation toModel(NewCompilationDto dto);
+    Compilation toCompilation(NewCompilationDto dto);
 
-    @Mapping(target = "events", source = "events", qualifiedByName = "eventsToEventShortDtos")
-    CompilationDto toCompilationDto(Compilation compilation);
+    @Mapping(target = "events", source = "eventShortDtos")
+    CompilationDto toCompilationDto(Compilation compilation, List<EventShortDto> eventShortDtos);
 
     List<CompilationDto> toCompilationDtoList(List<Compilation> compilations);
 
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "events", ignore = true)
     void updateCompilationFromDto(UpdateCompilationRequest dto, @MappingTarget Compilation compilation);
-
-    @Named("eventsToEventShortDtos")
-    default List<EventShortDto> eventsToEventShortDtos(Set<Event> events) {
-        if (events == null) {
-            return List.of();
-        }
-        return events.stream()
-                .map(this::eventToEventShortDto)
-                .collect(Collectors.toList());
-    }
-
-    default EventShortDto eventToEventShortDto(Event event) {
-        if (event == null) {
-            return null;
-        }
-
-        EventShortDto dto = new EventShortDto();
-        dto.setId(event.getId());
-        dto.setAnnotation(event.getAnnotation());
-
-        if (event.getCategory() != null) {
-            CategoryDto categoryDto = new CategoryDto(event.getCategory().getId(), event.getCategory().getName());
-            dto.setCategory(categoryDto);
-        }
-
-
-        dto.setConfirmedRequests(0L);
-        dto.setEventDate(event.getEventDate());
-
-        if (event.getInitiator() != null) {
-            UserShortDto initiatorDto = new UserShortDto(event.getInitiator().getName(), event.getInitiator().getEmail());
-            dto.setInitiator(initiatorDto);
-        }
-
-        dto.setPaid(event.getPaid());
-        dto.setTitle(event.getTitle());
-
-        dto.setViews(0L);
-
-        return dto;
-    }
 }
