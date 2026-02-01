@@ -12,9 +12,9 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
 
     List<Request> findByEventId(Long eventId);
 
-    Integer countByEventIdAndStatus(Long eventId, RequestState status);
+    Integer countByEventIdAndStatusIn(Long eventId, List<RequestState> status);
 
-    List<Request> findByIdInAndStatus(List<Long> ids, RequestState status);
+    List<Request> findByIdIn(List<Long> ids);
 
     Optional<Request> findByRequesterIdAndEventId(Long requesterId, Long eventId);
 }

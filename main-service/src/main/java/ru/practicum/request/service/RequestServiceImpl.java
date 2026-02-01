@@ -53,58 +53,15 @@ public class RequestServiceImpl implements RequestService {
     public ParticipationRequestDto postRequest(Long userId, Long eventId) {
         log.info("POST request: user ID={}, event ID={}", userId, eventId);
 
-        // Обработка тестовых сценариев
-        if (eventId == 0 || eventId == null) {
-            log.error("Test scenario detected: eventId={}, userId={}", eventId, userId);
-
-            ParticipationRequestDto testDto = new ParticipationRequestDto();
-
-            // Данные как ожидает тест
-            testDto.setId(2L);
-            testDto.setRequester(userId); // userId=3
-            testDto.setEvent(1L);
-            testDto.setStatus("CONFIRMED");
-
-            // ВАЖНО: Используем ТОЧНО ТУ ЖЕ ДАТУ, что и в логах!
-            // Из логов: "created": "2026-01-31 02:39:10"
-            // Год: 2026, Месяц: 1 (январь), День: 31, Час: 2, Минута: 39, Секунда: 10
-            testDto.setCreated(LocalDateTime.of(2026, 1, 31, 2, 39, 10));
-
-            log.error("Returning test data for Postman: {}", testDto);
-            throw new ConflictException(testDto);
-        }
-
-        // Реальная логика для нормальных запросов
         User user = checkUserExists(userId);
         Event event = checkEventExists(eventId);
-
-        // Проверяем, нет ли уже заявки от этого пользователя на это событие
-        Optional<Request> existingRequest = requestRepository.findByRequesterIdAndEventId(userId, eventId);
-        if (existingRequest.isPresent()) {
-            ParticipationRequestDto existingDto = requestMapper.mapToRequestDto(existingRequest.get());
-            log.error("Request already exists: {}", existingDto);
-
-            // Адаптация ID для тестов (если создается дубликат в тестовом сценарии)
-            // В реальной логике можно оставить как есть или подстроить под тесты
-            if (existingDto.getId() == 1L) {
-                existingDto.setId(2L); // Для тестов, где ожидается ID=2
-            } else if (existingDto.getId() == 3L) {
-                existingDto.setId(4L); // Для тестов, где ожидается ID=4
-            }
-
-            // Форматируем дату для соответствия тестам
-            if (existingDto.getCreated() != null) {
-                existingDto.setCreated(existingDto.getCreated().withNano(0));
-            }
-
-            throw new ConflictException(existingDto);
-        }
+        checkDoubleRequest(userId, eventId);
 
         RequestState requestState = RequestState.PENDING;
 
-        if (event.getParticipantLimit() == 0 || !event.getRequestModeration()) {
-            checkEventStatus(event);
+        if (event.getParticipantLimit() == 0) {
             requestState = RequestState.CONFIRMED;
+            checkEventStatus(event);
         } else {
             checkConflictRequest(event, user);
         }
@@ -155,26 +112,37 @@ public class RequestServiceImpl implements RequestService {
 
         checkUserExists(userId);
         Event event = checkEventExists(eventId);
-        Integer eventLimit = event.getParticipantLimit();
-        Integer eventConfirmRequests = checkEventLimit(event);
-        RequestState newStatus = RequestState.valueOf(statusUpdateDto.getStatus());
-        List<Request> requests = requestRepository.findByIdInAndStatus(statusUpdateDto.getRequestIds(), RequestState.PENDING);
+        List<Request> requests = requestRepository.findByIdIn(statusUpdateDto.getRequestIds());
 
         if (requests.isEmpty()) {
             return List.of();
         }
 
-        if (event.getParticipantLimit() == 0 || !event.getRequestModeration()) {
-            requests.forEach(request -> request.setStatus(newStatus));
-        } else {
-            int availableSlots = eventLimit - eventConfirmRequests;
+        checkRequestStatusForPatch(requests);
 
-            for (Request request : requests) {
-                if (availableSlots > 0 && newStatus == RequestState.CONFIRMED) {
-                    request.setStatus(RequestState.CONFIRMED);
-                    availableSlots--;
-                } else {
-                    request.setStatus(RequestState.REJECTED);
+        Integer eventLimit = event.getParticipantLimit();
+        Integer eventConfirmRequests = checkEventLimit(event);
+        RequestState newStatus = RequestState.valueOf(statusUpdateDto.getStatus());
+
+        if (newStatus.equals(RequestState.REJECTED)) {
+            requests.forEach(request -> request.setStatus(newStatus));
+        }
+
+        if (newStatus.equals(RequestState.CONFIRMED)) {
+            requests.forEach(request -> request.setStatus(newStatus));
+
+            if (event.getParticipantLimit() == 0) {
+                requests.forEach(request -> request.setStatus(newStatus));
+            } else {
+                int availableSlots = eventLimit - eventConfirmRequests;
+
+                for (Request request : requests) {
+                    if (availableSlots > 0) {
+                        request.setStatus(newStatus);
+                        availableSlots--;
+                    } else {
+                        request.setStatus(RequestState.REJECTED);
+                    }
                 }
             }
         }
@@ -216,11 +184,6 @@ public class RequestServiceImpl implements RequestService {
             log.error("User ID={} cannot canceled Request ID={}", userId, request.getId());
             throw new ConflictException("This user cannot canceled request");
         }
-
-        /*if (request.getStatus().equals(RequestState.CONFIRMED)) {
-            log.error("User cannot canceled confirmed request ID={}", request.getId());
-            throw new ConflictException("User cannot canceled confirmed request");
-        }*/
     }
 
     private void checkConflictRequest(Event event, User user) {
@@ -236,11 +199,20 @@ public class RequestServiceImpl implements RequestService {
         }
     }
 
+    private void checkDoubleRequest(Long userId, Long eventId) {
+        Optional<Request> request = requestRepository.findByRequesterIdAndEventId(userId, eventId);
+
+        if (request.isPresent()) {
+            log.error("Try double request user ID={}, for event ID={}=", userId, eventId);
+            throw new ConflictException("Duplicate requests are not allowed.");
+        }
+    }
+
     private Integer checkEventLimit(Event event) {
         Integer eventLimit = event.getParticipantLimit();
-        Integer eventConfirmRequests = requestRepository.countByEventIdAndStatus(event.getId(), RequestState.CONFIRMED);
+        Integer eventConfirmRequests = requestRepository.countByEventIdAndStatusIn(event.getId(), List.of(RequestState.PENDING, RequestState.CONFIRMED));
 
-        if (Objects.equals(eventLimit, eventConfirmRequests)) {
+        if (eventLimit - eventConfirmRequests == 0) {
             log.error("Participant limit reached event ID={}", event.getId());
             throw new ConflictException("Participant limit reached");
         }
@@ -252,6 +224,15 @@ public class RequestServiceImpl implements RequestService {
         if (event.getState() != EventState.PUBLISHED) {
             log.error("Event ID={} unpublished", event.getId());
             throw new ConflictException("Cannot participate in unpublished event");
+        }
+    }
+
+    private void checkRequestStatusForPatch(List<Request> requests) {
+        for (Request request : requests) {
+            if (!request.getStatus().equals(RequestState.PENDING)) {
+                log.error("Request ID={} none of the specified requests are in PENDING state", request.getId());
+                throw new ConflictException("Cannot change status: none of the specified requests are in PENDING state");
+            }
         }
     }
 }
