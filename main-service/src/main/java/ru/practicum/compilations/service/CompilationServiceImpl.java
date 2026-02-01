@@ -177,12 +177,10 @@ public class CompilationServiceImpl implements CompilationService {
      */
     private Map<Long, Long> getConfirmedRequests(List<Event> events) {
         Map<Long, Long> confirmedRequests = new HashMap<>();
-        
         // Временная реализация - возвращаем 0 для всех событий
-        for(Event event : events) {
+        for (Event event : events) {
             confirmedRequests.put(event.getId(), 0L);
         }
-        
         return confirmedRequests;
     }
 }
