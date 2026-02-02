@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS compilations_events
     CONSTRAINT fk_compevents_to_events FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_event_state ON events (state);
-CREATE INDEX idx_event_category ON events (category_id);
-CREATE INDEX idx_event_initiator ON events (initiator_id);
-CREATE INDEX idx_event_date ON events (event_date);
+CREATE INDEX IF NOT EXISTS idx_event_state ON events (state);
+CREATE INDEX IF NOT EXISTS idx_event_category ON events (category_id);
+CREATE INDEX IF NOT EXISTS idx_event_initiator ON events (initiator_id);
+CREATE INDEX IF NOT EXISTS idx_event_date ON events (event_date);

@@ -24,14 +24,14 @@ public interface EventMapper {
     Event toEvent(NewEventDto newEventDto, Category category, User user);
 
     @Mapping(target = "location", source = "event.location")
-    @Mapping(target = "views", source = "views")
-    @Mapping(target = "confirmedRequests", source = "confirmedRequests")
+    @Mapping(target = "views", source = "views", defaultValue = "0L")
+    @Mapping(target = "confirmedRequests", source = "confirmedRequests", defaultValue = "0L")
     EventFullDto toEventFullDto(Event event, Long views, Long confirmedRequests);
 
     @Mapping(target = "category", source = "event.category")
     @Mapping(target = "initiator", source = "event.initiator")
-    @Mapping(target = "views", source = "views")
-    @Mapping(target = "confirmedRequests", source = "confirmedRequests")
+    @Mapping(target = "views", source = "views", defaultValue = "0L")
+    @Mapping(target = "confirmedRequests", source = "confirmedRequests", defaultValue = "0L")
     EventShortDto toEventShortDto(Event event, Long views, Long confirmedRequests);
 
     default LocationEntity map(Location location) {

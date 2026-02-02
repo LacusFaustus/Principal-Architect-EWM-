@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 public class EventRequestStatusUpdateRequest {
     @NotEmpty
-    private List<Integer> requestIds;
+    private List<Long> requestIds;
     @NotBlank
     private String status;
 }
