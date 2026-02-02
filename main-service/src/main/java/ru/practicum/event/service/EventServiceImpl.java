@@ -169,31 +169,52 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventShortDto> getEventsByPublicFilters(PublicEventParams params, HttpServletRequest request) {
-        LocalDateTime rangeStart = params.getRangeStart() != null ? params.getRangeStart() : LocalDateTime.now();
+        log.info("Начало обработки getEventsByPublicFilters: text={}, categories={}, rangeStart={}",
+                params.getText(), params.getCategories(), params.getRangeStart());
 
-        int from = (params.getPageParams() != null && params.getPageParams().getFrom() != null)
-                ? params.getPageParams().getFrom() : 0;
-        int size = (params.getPageParams() != null && params.getPageParams().getSize() != null)
-                ? params.getPageParams().getSize() : 10;
+        // Установка времени по умолчанию, если оно не передано
+        LocalDateTime start = params.getRangeStart() == null ? LocalDateTime.now() : params.getRangeStart();
 
-        if (params.getRangeEnd() != null && params.getRangeEnd().isBefore(rangeStart)) {
-            throw new BadRequestException("RangeEnd must be after RangeStart");
+        // 1. Пагинация
+        int pageNum = params.getPageParams().getFrom() / params.getPageParams().getSize();
+        Pageable pageable = PageRequest.of(pageNum, params.getPageParams().getSize());
+
+        log.debug("Параметры пагинации: page={}, size={}, from={}", pageNum, params.getPageParams().getSize(), params.getPageParams().getFrom());
+
+        try {
+            // Если сортировка по просмотрам, логика сложнее
+            if ("VIEWS".equals(params.getSort())) {
+                log.info("Выбрана сортировка по VIEWS");
+                return getEventsSortedByViews(params, start);
+            }
+
+            // Обычная фильтрация с сортировкой по дате события (по умолчанию в ТЗ)
+            pageable = PageRequest.of(pageNum, params.getPageParams().getSize(), Sort.by("eventDate").ascending());
+
+            log.info("Запрос к EventRepository...");
+            Page<Event> eventsPage = eventRepository.findEventsByPublicFilters(
+                    params.getText(), params.getCategories(), params.getPaid(),
+                    start, params.getRangeEnd(), params.getOnlyAvailable(), pageable);
+
+            log.info("Найдено событий в БД: {}", eventsPage.getTotalElements());
+
+            List<Event> events = eventsPage.getContent();
+            Map<Long, Long> viewsMap = getEventsViews(events);
+
+            List<EventShortDto> result = events.stream()
+                    .map(event -> {
+                        Long confirmed = getConfirmedRequests(event.getId());
+                        return eventMapper.toEventShortDto(event, viewsMap.getOrDefault(event.getId(), 0L), confirmed);
+                    })
+                    .collect(Collectors.toList());
+
+            log.info("Успешное завершение. Возвращено {} элементов", result.size());
+            return result;
+
+        } catch (Exception e) {
+            log.error("КРИТИЧЕСКАЯ ОШИБКА в getEventsByPublicFilters: {}", e.getMessage(), e);
+            throw e; // Пробрасываем дальше, чтобы увидеть в консоли полный стек
         }
-
-        if ("VIEWS".equals(params.getSort())) {
-            return getEventsSortedByViews(params, rangeStart);
-        }
-
-        Pageable pageable = PageRequest.of(from / size, size, Sort.by("eventDate").descending());
-
-        Page<Event> eventsPage = eventRepository.findEventsByPublicFilters(
-                params.getText(), params.getCategories(), params.getPaid(),
-                rangeStart, params.getRangeEnd(), params.getOnlyAvailable(), pageable);
-
-        return eventsPage.getContent().stream()
-                .map(event -> eventMapper.toEventShortDto(event, getViews(event.getId()),
-                        requestRepository.countByEventIdAndStatus(event.getId(), RequestState.CONFIRMED)))
-                .collect(Collectors.toList());
     }
 
     private List<EventShortDto> getEventsSortedByViews(PublicEventParams params, LocalDateTime rangeStart) {
@@ -230,10 +251,19 @@ public class EventServiceImpl implements EventService {
                 requestRepository.countByEventIdAndStatus(eventId, RequestState.CONFIRMED));
     }
 
-    @Override
     public void saveStats(HttpServletRequest request) {
-        statClient.saveHit(new NewEndpointHitDto(
-                "ewm-main-service", request.getRequestURI(), request.getRemoteAddr(), LocalDateTime.now()));
+        try {
+            statClient.saveHit(new NewEndpointHitDto(
+                    "ewm-main-service",
+                    request.getRequestURI(),
+                    request.getRemoteAddr(),
+                    LocalDateTime.now()
+            ));
+            log.info("Stats saved for URI: {}", request.getRequestURI());
+        } catch (Exception e) {
+            // Логируем ошибку, но не выбрасываем её дальше!
+            log.error("Unable to save stats: {}", e.getMessage());
+        }
     }
 
     @Override
@@ -433,40 +463,49 @@ public class EventServiceImpl implements EventService {
     }
 
     private Map<Long, Long> getEventsViews(List<Event> events) {
-        Map<Long, Long> views = new HashMap<>();
+        log.debug("Получение просмотров для {} событий", events.size());
+        Map<Long, Long> viewsMap = new HashMap<>();
 
-        if (events == null || events.isEmpty()) {
-            return views;
-        }
+        if (events.isEmpty()) return viewsMap;
 
         List<String> uris = events.stream()
-                .map(event -> "/events/" + event.getId())
+                .map(e -> "/events/" + e.getId())
                 .collect(Collectors.toList());
 
         try {
+            // ВАЖНО: Проверьте, что statClient не возвращает null
             List<ViewStatsDto> stats = statClient.getStats(
                     LocalDateTime.now().minusYears(10),
                     LocalDateTime.now().plusYears(1),
                     uris,
                     true);
 
-            for (ViewStatsDto stat : stats) {
-                try {
-                    String uri = stat.getUri();
-                    Long eventId = Long.parseLong(uri.substring(uri.lastIndexOf("/") + 1));
-                    views.put(eventId, stat.getHits());
-                } catch (Exception e) {
-                    log.warn("Ошибка парсинга URI из статистики: {}", stat.getUri());
+            if (stats != null) {
+                for (ViewStatsDto dto : stats) {
+                    try {
+                        String uri = dto.getUri();
+                        // Безопасный способ извлечь ID
+                        String[] parts = uri.split("/");
+                        Long id = Long.parseLong(parts[parts.length - 1]);
+                        viewsMap.put(id, dto.getHits());
+                    } catch (Exception e) {
+                        log.warn("Не удалось распарсить URI статистики: {}", dto.getUri());
+                    }
                 }
             }
         } catch (Exception e) {
-            log.error("Ошибка при получении статистики от stats-server: {}", e.getMessage());
+            log.error("Ошибка при запросе к сервису статистики: {}", e.getMessage());
+            // Возвращаем пустую мапу, чтобы не ломать основной флоу
         }
-
-        return views;
+        return viewsMap;
     }
 
     private Long getConfirmedRequests(Long eventId) {
-        return requestRepository.countByEventIdAndStatus(eventId, RequestState.CONFIRMED);
+        try {
+            return requestRepository.countByEventIdAndStatus(eventId, RequestState.CONFIRMED);
+        } catch (Exception e) {
+            log.error("Ошибка при подсчете заявок для события {}: {}", eventId, e.getMessage());
+            return 0L;
+        }
     }
 }
