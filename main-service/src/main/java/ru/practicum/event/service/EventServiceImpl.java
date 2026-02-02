@@ -181,7 +181,7 @@ public class EventServiceImpl implements EventService {
         }
 
         if ("VIEWS".equals(params.getSort())) {
-            return getEventsSortedByViews(params, rangeStart, from, size);
+            return getEventsSortedByViews(params, rangeStart);
         }
 
         Pageable pageable = PageRequest.of(from / size, size, Sort.by("eventDate").descending());
@@ -196,32 +196,23 @@ public class EventServiceImpl implements EventService {
                 .collect(Collectors.toList());
     }
 
-    private List<EventShortDto> getEventsSortedByViews(PublicEventParams params, LocalDateTime rangeStart, int from, int size) {
-        Pageable allPossibleEvents = PageRequest.of(0, Integer.MAX_VALUE);
+    private List<EventShortDto> getEventsSortedByViews(PublicEventParams params, LocalDateTime rangeStart) {
+        Pageable allRecords = PageRequest.of(0, Integer.MAX_VALUE);
 
-        Page<Event> allEventsPage = eventRepository.findEventsByPublicFilters(
-                params.getText(),
-                params.getCategories(),
-                params.getPaid(),
-                rangeStart,
-                params.getRangeEnd(),
-                params.getOnlyAvailable(),
-                allPossibleEvents);
+        Page<Event> eventsPage = eventRepository.findEventsByPublicFilters(
+                params.getText(), params.getCategories(), params.getPaid(),
+                rangeStart, params.getRangeEnd(), params.getOnlyAvailable(), allRecords);
 
-        List<Event> events = allEventsPage.getContent();
-        if (events.isEmpty()) return Collections.emptyList();
-
-        Map<Long, Long> viewsMap = getViewsBatch(events);
+        List<Event> events = eventsPage.getContent();
+        Map<Long, Long> viewsMap = getEventsViews(events); // Наш метод получения стат
 
         return events.stream()
-                .map(event -> {
-                    Long views = viewsMap.getOrDefault(event.getId(), 0L);
-                    Long confirmed = requestRepository.countByEventIdAndStatus(event.getId(), RequestState.CONFIRMED);
-                    return eventMapper.toEventShortDto(event, views, confirmed);
-                })
+                .map(event -> eventMapper.toEventShortDto(event,
+                        viewsMap.getOrDefault(event.getId(), 0L),
+                        getConfirmedRequests(event.getId())))
                 .sorted(Comparator.comparing(EventShortDto::getViews).reversed())
-                .skip(from)
-                .limit(size)
+                .skip(params.getPageParams().getFrom())
+                .limit(params.getPageParams().getSize())
                 .collect(Collectors.toList());
     }
 
@@ -439,5 +430,43 @@ public class EventServiceImpl implements EventService {
         if (eventDate != null && eventDate.isBefore(LocalDateTime.now().plusHours(hours))) {
             throw new BadRequestException("Event date too early");
         }
+    }
+
+    private Map<Long, Long> getEventsViews(List<Event> events) {
+        Map<Long, Long> views = new HashMap<>();
+
+        if (events == null || events.isEmpty()) {
+            return views;
+        }
+
+        List<String> uris = events.stream()
+                .map(event -> "/events/" + event.getId())
+                .collect(Collectors.toList());
+
+        try {
+            List<ViewStatsDto> stats = statClient.getStats(
+                    LocalDateTime.now().minusYears(10),
+                    LocalDateTime.now().plusYears(1),
+                    uris,
+                    true);
+
+            for (ViewStatsDto stat : stats) {
+                try {
+                    String uri = stat.getUri();
+                    Long eventId = Long.parseLong(uri.substring(uri.lastIndexOf("/") + 1));
+                    views.put(eventId, stat.getHits());
+                } catch (Exception e) {
+                    log.warn("Ошибка парсинга URI из статистики: {}", stat.getUri());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Ошибка при получении статистики от stats-server: {}", e.getMessage());
+        }
+
+        return views;
+    }
+
+    private Long getConfirmedRequests(Long eventId) {
+        return requestRepository.countByEventIdAndStatus(eventId, RequestState.CONFIRMED);
     }
 }
