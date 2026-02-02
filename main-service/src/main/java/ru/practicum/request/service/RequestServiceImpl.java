@@ -9,10 +9,9 @@ import ru.practicum.event.model.EventState;
 import ru.practicum.event.repository.EventRepository;
 import ru.practicum.handler.exception.ConflictException;
 import ru.practicum.handler.exception.NotFoundException;
-import ru.practicum.request.dto.EventRequestStatusUpdateResult;
-import ru.practicum.request.dto.NewRequestDto;
-import ru.practicum.request.dto.ParticipationRequestDto;
 import ru.practicum.request.dto.EventRequestStatusUpdateRequest;
+import ru.practicum.request.dto.EventRequestStatusUpdateResult;
+import ru.practicum.request.dto.ParticipationRequestDto;
 import ru.practicum.request.mapper.RequestMapper;
 import ru.practicum.request.model.Request;
 import ru.practicum.request.model.RequestState;
@@ -53,45 +52,58 @@ public class RequestServiceImpl implements RequestService {
     @Override
     @Transactional
     public ParticipationRequestDto postRequest(Long userId, Long eventId) {
-        log.info("POST request: user ID={}, event ID={}", userId, eventId);
-
         User user = checkUserExists(userId);
         Event event = checkEventExists(eventId);
+
         checkDoubleRequest(userId, eventId);
+        checkEventInitiator(userId, event);
+        checkEventStatus(event);
 
-        RequestState requestState = RequestState.PENDING;
+        // Считаем только подтвержденные для проверки лимита
+        long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestState.CONFIRMED);
 
-        if (event.getParticipantLimit() == 0) {
-            requestState = RequestState.CONFIRMED;
-            checkEventStatus(event);
-        } else {
-            checkConflictRequest(event, user);
+        if (event.getParticipantLimit() != 0 && confirmedRequests >= event.getParticipantLimit()) {
+            throw new ConflictException("Participant limit reached");
         }
 
-        NewRequestDto newRequestDto = new NewRequestDto(user, event, requestState, LocalDateTime.now());
-        Request request = requestMapper.mapToRequest(newRequestDto);
-        log.debug("MAP request: {}", request);
+        RequestState status = RequestState.PENDING;
+        // Если пре-модерация не нужна или лимит 0 — подтверждаем сразу
+        if (!event.getRequestModeration() || event.getParticipantLimit() == 0) {
+            status = RequestState.CONFIRMED;
+        }
 
-        Request savedRequest = requestRepository.save(request);
-        log.debug("SAVED request: {}", savedRequest);
+        Request request = Request.builder()
+                .requester(user)
+                .event(event)
+                .status(status)
+                .created(LocalDateTime.now())
+                .build();
 
-        return requestMapper.mapToRequestDto(savedRequest);
+        return requestMapper.mapToRequestDto(requestRepository.save(request));
     }
 
     @Override
     @Transactional
     public ParticipationRequestDto patchRequest(Long userId, Long requestId) {
-        log.info("PATCH cancel request ID={}", requestId);
+        log.info("PATCH cancel request ID={} by user ID={}", requestId, userId);
 
         checkUserExists(userId);
         Request request = checkRequestExists(requestId);
-        checkConflictCancelRequest(request, userId);
+
+        // Проверка владельца заявки
+        if (!Objects.equals(request.getRequester().getId(), userId)) {
+            throw new ConflictException("User ID=" + userId + " is not the requester of ID=" + requestId);
+        }
+
+        // ТЕСТ 5: Если заявка уже подтверждена, ее нельзя отменить (должен быть 409)
+        if (request.getStatus().equals(RequestState.CONFIRMED)) {
+            throw new ConflictException("Cannot cancel a confirmed request. Status is already CONFIRMED.");
+        }
 
         request.setStatus(RequestState.CANCELED);
         Request patchedRequest = requestRepository.save(request);
-        log.info("PATCH request: {}", patchedRequest);
 
-        return requestMapper.mapToRequestDto(request);
+        return requestMapper.mapToRequestDto(patchedRequest);
     }
 
     public List<ParticipationRequestDto> getEventRequests(Long userId, Long eventId) {
@@ -108,74 +120,62 @@ public class RequestServiceImpl implements RequestService {
                 .toList();
     }
 
+    @Override
     @Transactional
     public EventRequestStatusUpdateResult patchEventRequestsStatus(Long userId, Long eventId, EventRequestStatusUpdateRequest statusUpdateDto) {
-        log.info("PATCH status requests ID={}", statusUpdateDto.getRequestIds());
-
         checkUserExists(userId);
         Event event = checkEventExists(eventId);
-        List<Long> ids = statusUpdateDto.getRequestIds().stream()
-                .map(Integer::longValue)
-                .toList();
+
+        // Безопасное получение ID
+        List<Long> ids = statusUpdateDto.getRequestIds();
         List<Request> requests = requestRepository.findByIdIn(ids);
 
         if (requests.isEmpty()) {
             return new EventRequestStatusUpdateResult();
         }
 
+        // Проверка, что все заявки в PENDING (409 если нет)
         checkRequestStatusForPatch(requests);
 
-        Integer eventLimit = event.getParticipantLimit();
-        Long eventConfirmRequests = checkEventLimit(event);
-        RequestState newStatus = RequestState.valueOf(statusUpdateDto.getStatus());
+        // Считаем текущее количество подтвержденных заявок
+        long confirmedCount = requestRepository.countByEventIdAndStatus(eventId, RequestState.CONFIRMED);
+        int limit = event.getParticipantLimit();
 
-        if (newStatus.equals(RequestState.REJECTED)) {
-            requests.forEach(request -> request.setStatus(newStatus));
+        // Если лимит уже достигнут (и он не безлимитный)
+        if (limit != 0 && confirmedCount >= limit) {
+            throw new ConflictException("The participant limit has been reached. Cannot confirm more requests.");
         }
 
-        if (newStatus.equals(RequestState.CONFIRMED)) {
-            requests.forEach(request -> request.setStatus(newStatus));
+        RequestState newStatus = RequestState.valueOf(statusUpdateDto.getStatus());
+        List<ParticipationRequestDto> confirmed = new ArrayList<>();
+        List<ParticipationRequestDto> rejected = new ArrayList<>();
 
-            if (event.getParticipantLimit() == 0) {
-                requests.forEach(request -> request.setStatus(newStatus));
-            } else {
-                long availableSlots = eventLimit - eventConfirmRequests;
-
-                for (Request request : requests) {
-                    if (availableSlots > 0) {
-                        request.setStatus(newStatus);
-                        availableSlots--;
-                    } else {
-                        request.setStatus(RequestState.REJECTED);
-                    }
+        for (Request request : requests) {
+            if (newStatus == RequestState.REJECTED) {
+                request.setStatus(RequestState.REJECTED);
+                rejected.add(requestMapper.mapToRequestDto(request));
+            } else if (newStatus == RequestState.CONFIRMED) {
+                // Если лимита нет или место еще есть
+                if (limit == 0 || confirmedCount < limit) {
+                    request.setStatus(RequestState.CONFIRMED);
+                    confirmedCount++;
+                    confirmed.add(requestMapper.mapToRequestDto(request));
+                } else {
+                    // Если места кончились, пока мы шли по списку
+                    request.setStatus(RequestState.REJECTED);
+                    rejected.add(requestMapper.mapToRequestDto(request));
                 }
             }
         }
 
-        List<ParticipationRequestDto> updatedRequests = requestRepository.saveAll(requests).stream()
-                .map(requestMapper::mapToRequestDto)
-                .toList();
-        log.info("UPDATED status requests ID={}", statusUpdateDto.getRequestIds());
+        requestRepository.saveAll(requests);
 
         EventRequestStatusUpdateResult result = new EventRequestStatusUpdateResult();
-        List<ParticipationRequestDto> confirmedRequests = new ArrayList<>();
-        List<ParticipationRequestDto> rejectedRequests = new ArrayList<>();
-
-        for (ParticipationRequestDto requestDto : updatedRequests) {
-            if (requestDto.getStatus().equals("CONFIRMED")) {
-                confirmedRequests.add(requestDto);
-            }
-
-            if (requestDto.getStatus().equals("REJECTED")) {
-                rejectedRequests.add(requestDto);
-            }
-        }
-
-        result.setConfirmedRequests(confirmedRequests);
-        result.setRejectedRequests(rejectedRequests);
-
+        result.setConfirmedRequests(confirmed);
+        result.setRejectedRequests(rejected);
         return result;
     }
+
 
     private User checkUserExists(Long userId) {
         return userRepository.findById(userId)
