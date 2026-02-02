@@ -87,16 +87,4 @@ public class ErrorHandler {
                 .map(StackTraceElement::toString)
                 .collect(Collectors.toList());
     }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST) // Ожидается BAD REQUEST
-    public ApiError handleValidationException(MethodArgumentNotValidException e) {
-        return new ApiError(
-                getStackTrace(e),
-                e.getMessage(),
-                "Incorrectly made request.",
-                HttpStatus.BAD_REQUEST.name(),
-                LocalDateTime.now().format(FORMATTER)
-        );
-    }
 }
