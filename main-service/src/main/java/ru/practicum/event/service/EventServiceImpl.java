@@ -198,7 +198,7 @@ public class EventServiceImpl implements EventService {
             log.info("Запрос к EventRepository...");
             Page<Event> eventsPage = eventRepository.findEventsByPublicFilters(
                     params.getText(), params.getCategories(), params.getPaid(),
-                    start, params.getRangeEnd(), params.getOnlyAvailable(), pageable);
+                    start, params.getRangeEnd(), pageable);
 
             log.info("Найдено событий в БД: {}", eventsPage.getTotalElements());
 
@@ -226,7 +226,7 @@ public class EventServiceImpl implements EventService {
 
         Page<Event> eventsPage = eventRepository.findEventsByPublicFilters(
                 params.getText(), params.getCategories(), params.getPaid(),
-                rangeStart, params.getRangeEnd(), params.getOnlyAvailable(), allRecords);
+                rangeStart, params.getRangeEnd(), allRecords);
 
         List<Event> events = eventsPage.getContent();
         Map<Long, Long> viewsMap = getEventsViews(events); // Наш метод получения стат

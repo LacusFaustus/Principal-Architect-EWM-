@@ -31,24 +31,19 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                          @Param("rangeEnd") LocalDateTime rangeEnd,
                                          Pageable pageable);
 
-    @Query(value = "SELECT e FROM Event e " +
+    @Query("SELECT e FROM Event e " +
             "WHERE e.state = 'PUBLISHED' " +
-            "AND (:text IS NULL OR (LOWER(e.annotation) LIKE LOWER(CONCAT('%', :text, '%')) " +
-            "OR LOWER(e.description) LIKE LOWER(CONCAT('%', :text, '%')))) " +
+            "AND (:text IS NULL OR LOWER(e.annotation) LIKE LOWER(CONCAT('%', :text, '%')) " +
+            "OR LOWER(e.description) LIKE LOWER(CONCAT('%', :text, '%'))) " +
             "AND (:categories IS NULL OR e.category.id IN :categories) " +
             "AND (:paid IS NULL OR e.paid = :paid) " +
-            "AND (:rangeStart IS NULL OR e.eventDate >= :rangeStart) " +
-            "AND (:rangeEnd IS NULL OR e.eventDate <= :rangeEnd) " +
-            "AND (:onlyAvailable = false OR e.participantLimit = 0 OR " +
-            "e.participantLimit > (SELECT COUNT(r.id) FROM Request r " +
-            "WHERE r.event.id = e.id AND r.status = 'CONFIRMED'))",
-            countQuery = "SELECT COUNT(e) FROM Event e WHERE e.state = 'PUBLISHED'")
+            "AND (cast(:rangeStart as localdatetime) IS NULL OR e.eventDate >= :rangeStart) " +
+            "AND (cast(:rangeEnd as localdatetime) IS NULL OR e.eventDate <= :rangeEnd)")
     Page<Event> findEventsByPublicFilters(
             @Param("text") String text,
             @Param("categories") List<Long> categories,
             @Param("paid") Boolean paid,
             @Param("rangeStart") LocalDateTime rangeStart,
             @Param("rangeEnd") LocalDateTime rangeEnd,
-            @Param("onlyAvailable") Boolean onlyAvailable,
             Pageable pageable);
 }
