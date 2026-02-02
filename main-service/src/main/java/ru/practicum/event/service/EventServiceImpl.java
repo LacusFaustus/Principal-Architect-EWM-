@@ -353,11 +353,10 @@ public class EventServiceImpl implements EventService {
     // === Helpers ===
 
     private Long getViews(Long eventId) {
-        Map<Long, Long> map = getViewsBatch(List.of(new Event() {
-            {
-            setId(eventId);
-        }
-        }));
+        Event event = new Event();
+        event.setId(eventId);
+
+        Map<Long, Long> map = getViewsBatch(List.of(event));
         return map.getOrDefault(eventId, 0L);
     }
 
