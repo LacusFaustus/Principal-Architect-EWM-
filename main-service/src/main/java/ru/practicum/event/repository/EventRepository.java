@@ -22,8 +22,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "WHERE (:users IS NULL OR e.initiator.id IN :users) " +
             "AND (:states IS NULL OR e.state IN :states) " +
             "AND (:categories IS NULL OR e.category.id IN :categories) " +
-            "AND (CAST(:rangeStart AS timestamp) IS NULL OR e.eventDate >= :rangeStart) " +
-            "AND (CAST(:rangeEnd AS timestamp) IS NULL OR e.eventDate <= :rangeEnd)")
+            "AND (:rangeStart IS NULL OR e.eventDate >= :rangeStart) " +
+            "AND (:rangeEnd IS NULL OR e.eventDate <= :rangeEnd)")
     Page<Event> findEventsByAdminFilters(@Param("users") List<Long> users,
                                          @Param("states") List<EventState> states,
                                          @Param("categories") List<Long> categories,
@@ -31,17 +31,18 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                          @Param("rangeEnd") LocalDateTime rangeEnd,
                                          Pageable pageable);
 
-    @Query("SELECT e FROM Event e " +
+    @Query(value = "SELECT e FROM Event e " +
             "WHERE e.state = 'PUBLISHED' " +
-            "AND (:text IS NULL OR LOWER(e.annotation) LIKE LOWER(CONCAT('%', :text, '%')) " +
-            "OR LOWER(e.description) LIKE LOWER(CONCAT('%', :text, '%'))) " +
+            "AND (:text IS NULL OR (LOWER(e.annotation) LIKE LOWER(CONCAT('%', :text, '%')) " +
+            "OR LOWER(e.description) LIKE LOWER(CONCAT('%', :text, '%')))) " +
             "AND (:categories IS NULL OR e.category.id IN :categories) " +
             "AND (:paid IS NULL OR e.paid = :paid) " +
-            "AND (CAST(:rangeStart AS timestamp) IS NULL OR e.eventDate >= :rangeStart) " +
-            "AND (CAST(:rangeEnd AS timestamp) IS NULL OR e.eventDate <= :rangeEnd) " +
+            "AND (:rangeStart IS NULL OR e.eventDate >= :rangeStart) " +
+            "AND (:rangeEnd IS NULL OR e.eventDate <= :rangeEnd) " +
             "AND (:onlyAvailable = false OR e.participantLimit = 0 OR " +
-            "e.participantLimit > (SELECT COUNT(r) FROM Request r " +
-            "WHERE r.event.id = e.id AND r.status = 'CONFIRMED'))")
+            "e.participantLimit > (SELECT COUNT(r.id) FROM ParticipationRequest r " +
+            "WHERE r.event.id = e.id AND r.status = 'CONFIRMED'))",
+            countQuery = "SELECT COUNT(e) FROM Event e WHERE e.state = 'PUBLISHED'")
     Page<Event> findEventsByPublicFilters(
             @Param("text") String text,
             @Param("categories") List<Long> categories,
