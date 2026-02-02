@@ -169,15 +169,22 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventShortDto> getEventsByPublicFilters(PublicEventParams params, HttpServletRequest request) {
-        LocalDateTime rangeStart = params.getRangeStart();
-        if (rangeStart == null) rangeStart = LocalDateTime.now();
+        LocalDateTime rangeStart = params.getRangeStart() != null ? params.getRangeStart() : LocalDateTime.now();
 
-        if ("VIEWS".equals(params.getSort())) {
-            return getEventsSortedByViews(params, rangeStart);
+        int from = (params.getPageParams() != null && params.getPageParams().getFrom() != null)
+                ? params.getPageParams().getFrom() : 0;
+        int size = (params.getPageParams() != null && params.getPageParams().getSize() != null)
+                ? params.getPageParams().getSize() : 10;
+
+        if (params.getRangeEnd() != null && params.getRangeEnd().isBefore(rangeStart)) {
+            throw new BadRequestException("RangeEnd must be after RangeStart");
         }
 
-        Pageable pageable = PageRequest.of(params.getPageParams().getFrom() / params.getPageParams().getSize(),
-                params.getPageParams().getSize(), Sort.by("eventDate"));
+        if ("VIEWS".equals(params.getSort())) {
+            return getEventsSortedByViews(params, rangeStart, from, size);
+        }
+
+        Pageable pageable = PageRequest.of(from / size, size, Sort.by("eventDate").descending());
 
         Page<Event> eventsPage = eventRepository.findEventsByPublicFilters(
                 params.getText(), params.getCategories(), params.getPaid(),
@@ -189,7 +196,7 @@ public class EventServiceImpl implements EventService {
                 .collect(Collectors.toList());
     }
 
-    private List<EventShortDto> getEventsSortedByViews(PublicEventParams params, LocalDateTime rangeStart) {
+    private List<EventShortDto> getEventsSortedByViews(PublicEventParams params, LocalDateTime rangeStart, int from, int size) {
         Pageable allPossibleEvents = PageRequest.of(0, Integer.MAX_VALUE);
 
         Page<Event> allEventsPage = eventRepository.findEventsByPublicFilters(
@@ -202,6 +209,7 @@ public class EventServiceImpl implements EventService {
                 allPossibleEvents);
 
         List<Event> events = allEventsPage.getContent();
+        if (events.isEmpty()) return Collections.emptyList();
 
         Map<Long, Long> viewsMap = getViewsBatch(events);
 
@@ -212,8 +220,8 @@ public class EventServiceImpl implements EventService {
                     return eventMapper.toEventShortDto(event, views, confirmed);
                 })
                 .sorted(Comparator.comparing(EventShortDto::getViews).reversed())
-                .skip(params.getPageParams().getFrom() != null ? params.getPageParams().getFrom() : 0)
-                .limit(params.getPageParams().getSize() != null ? params.getPageParams().getSize() : 10)
+                .skip(from)
+                .limit(size)
                 .collect(Collectors.toList());
     }
 
