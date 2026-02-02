@@ -254,15 +254,13 @@ public class EventServiceImpl implements EventService {
     public void saveStats(HttpServletRequest request) {
         try {
             statClient.saveHit(new NewEndpointHitDto(
-                    "ewm-main-service",
+                    "main-service",
                     request.getRequestURI(),
                     request.getRemoteAddr(),
                     LocalDateTime.now()
             ));
-            log.info("Stats saved for URI: {}", request.getRequestURI());
         } catch (Exception e) {
-            // Логируем ошибку, но не выбрасываем её дальше!
-            log.error("Unable to save stats: {}", e.getMessage());
+            log.error("Ошибка при сохранении статистики: {}", e.getMessage());
         }
     }
 
@@ -463,41 +461,30 @@ public class EventServiceImpl implements EventService {
     }
 
     private Map<Long, Long> getEventsViews(List<Event> events) {
-        log.debug("Получение просмотров для {} событий", events.size());
-        Map<Long, Long> viewsMap = new HashMap<>();
-
-        if (events.isEmpty()) return viewsMap;
+        if (events.isEmpty()) return Collections.emptyMap();
 
         List<String> uris = events.stream()
-                .map(e -> "/events/" + e.getId())
+                .map(event -> "/events/" + event.getId())
                 .collect(Collectors.toList());
 
         try {
-            // ВАЖНО: Проверьте, что statClient не возвращает null
             List<ViewStatsDto> stats = statClient.getStats(
-                    LocalDateTime.now().minusYears(10),
+                    LocalDateTime.now().minusYears(10), // Берем большой интервал
                     LocalDateTime.now().plusYears(1),
                     uris,
                     true);
 
-            if (stats != null) {
-                for (ViewStatsDto dto : stats) {
-                    try {
-                        String uri = dto.getUri();
-                        // Безопасный способ извлечь ID
-                        String[] parts = uri.split("/");
-                        Long id = Long.parseLong(parts[parts.length - 1]);
-                        viewsMap.put(id, dto.getHits());
-                    } catch (Exception e) {
-                        log.warn("Не удалось распарсить URI статистики: {}", dto.getUri());
-                    }
-                }
-            }
+            return stats.stream()
+                    .filter(s -> s.getUri().contains("/events/"))
+                    .collect(Collectors.toMap(
+                            s -> Long.parseLong(s.getUri().substring(s.getUri().lastIndexOf("/") + 1)),
+                            ViewStatsDto::getHits,
+                            (existing, replacement) -> existing
+                    ));
         } catch (Exception e) {
-            log.error("Ошибка при запросе к сервису статистики: {}", e.getMessage());
-            // Возвращаем пустую мапу, чтобы не ломать основной флоу
+            log.warn("Не удалось получить статистику просмотров: {}", e.getMessage());
+            return Collections.emptyMap(); // Возвращаем пустую карту вместо ошибки
         }
-        return viewsMap;
     }
 
     private Long getConfirmedRequests(Long eventId) {

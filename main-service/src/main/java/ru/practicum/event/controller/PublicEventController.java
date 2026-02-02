@@ -45,7 +45,7 @@ public class PublicEventController {
 
         List<EventShortDto> events = eventService.getEventsByPublicFilters(params, request);
 
-        eventService.saveStats(request);
+//        eventService.saveStats(request);
 
         return ResponseEntity.ok(events);
     }
