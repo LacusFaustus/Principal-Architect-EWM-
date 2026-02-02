@@ -172,8 +172,12 @@ public class EventServiceImpl implements EventService {
         log.info("Начало обработки getEventsByPublicFilters: text={}, categories={}, rangeStart={}",
                 params.getText(), params.getCategories(), params.getRangeStart());
 
-        // Установка времени по умолчанию, если оно не передано
-        LocalDateTime start = params.getRangeStart() == null ? LocalDateTime.now() : params.getRangeStart();
+        LocalDateTime start = params.getRangeStart();
+        LocalDateTime end = params.getRangeEnd();
+
+        if (start == null && end == null) {
+            start = LocalDateTime.now();
+        }
 
         // 1. Пагинация
         int pageNum = params.getPageParams().getFrom() / params.getPageParams().getSize();
