@@ -169,8 +169,8 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventShortDto> getEventsByPublicFilters(PublicEventParams params, HttpServletRequest request) {
-        log.info("Начало обработки getEventsByPublicFilters: text={}, categories={}, rangeStart={}",
-                params.getText(), params.getCategories(), params.getRangeStart());
+        log.info("Public search: text={}, rangeStart={}, rangeEnd={}",
+                params.getText(), params.getRangeStart(), params.getRangeEnd());
 
         LocalDateTime start = params.getRangeStart();
         LocalDateTime end = params.getRangeEnd();
@@ -179,45 +179,41 @@ public class EventServiceImpl implements EventService {
             start = LocalDateTime.now();
         }
 
-        // 1. Пагинация
         int pageNum = params.getPageParams().getFrom() / params.getPageParams().getSize();
-        Pageable pageable = PageRequest.of(pageNum, params.getPageParams().getSize());
+        Pageable pageable;
 
-        log.debug("Параметры пагинации: page={}, size={}, from={}", pageNum, params.getPageParams().getSize(), params.getPageParams().getFrom());
+        if ("EVENT_DATE".equals(params.getSort()) || params.getSort() == null) {
+            pageable = PageRequest.of(pageNum, params.getPageParams().getSize(), Sort.by("eventDate").ascending());
+        } else {
+            pageable = PageRequest.of(pageNum, params.getPageParams().getSize());
+        }
 
         try {
-            // Если сортировка по просмотрам, логика сложнее
             if ("VIEWS".equals(params.getSort())) {
-                log.info("Выбрана сортировка по VIEWS");
                 return getEventsSortedByViews(params, start);
             }
 
-            // Обычная фильтрация с сортировкой по дате события (по умолчанию в ТЗ)
-            pageable = PageRequest.of(pageNum, params.getPageParams().getSize(), Sort.by("eventDate").ascending());
-
-            log.info("Запрос к EventRepository...");
             Page<Event> eventsPage = eventRepository.findEventsByPublicFilters(
-                    params.getText(), params.getCategories(), params.getPaid(),
-                    start, params.getRangeEnd(), pageable);
-
-            log.info("Найдено событий в БД: {}", eventsPage.getTotalElements());
+                    params.getText(),
+                    params.getCategories(),
+                    params.getPaid(),
+                    start,
+                    end,
+                    pageable);
 
             List<Event> events = eventsPage.getContent();
             Map<Long, Long> viewsMap = getEventsViews(events);
 
-            List<EventShortDto> result = events.stream()
+            return events.stream()
                     .map(event -> {
                         Long confirmed = getConfirmedRequests(event.getId());
                         return eventMapper.toEventShortDto(event, viewsMap.getOrDefault(event.getId(), 0L), confirmed);
                     })
                     .collect(Collectors.toList());
 
-            log.info("Успешное завершение. Возвращено {} элементов", result.size());
-            return result;
-
         } catch (Exception e) {
-            log.error("КРИТИЧЕСКАЯ ОШИБКА в getEventsByPublicFilters: {}", e.getMessage(), e);
-            throw e; // Пробрасываем дальше, чтобы увидеть в консоли полный стек
+            log.error("Database error in public search: {}", e.getMessage());
+            throw e;
         }
     }
 
