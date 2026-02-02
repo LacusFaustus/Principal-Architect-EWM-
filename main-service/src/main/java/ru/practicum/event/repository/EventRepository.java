@@ -40,7 +40,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "AND (:rangeStart IS NULL OR e.eventDate >= :rangeStart) " +
             "AND (:rangeEnd IS NULL OR e.eventDate <= :rangeEnd) " +
             "AND (:onlyAvailable = false OR e.participantLimit = 0 OR " +
-            "e.participantLimit > (SELECT COUNT(r.id) FROM ParticipationRequest r " +
+            "e.participantLimit > (SELECT COUNT(r.id) FROM Request r " +
             "WHERE r.event.id = e.id AND r.status = 'CONFIRMED'))",
             countQuery = "SELECT COUNT(e) FROM Event e WHERE e.state = 'PUBLISHED'")
     Page<Event> findEventsByPublicFilters(
