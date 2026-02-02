@@ -219,7 +219,7 @@ public class EventServiceImpl implements EventService {
                 rangeStart, params.getRangeEnd(), allRecords);
 
         List<Event> events = eventsPage.getContent();
-        Map<Long, Long> viewsMap = getEventsViews(events); // Наш метод получения стат
+        Map<Long, Long> viewsMap = getEventsViews(events);
 
         return events.stream()
                 .map(event -> eventMapper.toEventShortDto(event,
@@ -240,11 +240,11 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Event must be published");
         }
 
-        saveStats(request);
         return eventMapper.toEventFullDto(event, getViews(eventId),
                 requestRepository.countByEventIdAndStatus(eventId, RequestState.CONFIRMED));
     }
 
+    @Override
     public void saveStats(HttpServletRequest request) {
         try {
             statClient.saveHit(new NewEndpointHitDto(
