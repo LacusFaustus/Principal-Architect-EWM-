@@ -169,9 +169,6 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventShortDto> getEventsByPublicFilters(PublicEventParams params, HttpServletRequest request) {
-        log.info("Public search: text={}, rangeStart={}, rangeEnd={}",
-                params.getText(), params.getRangeStart(), params.getRangeEnd());
-
         LocalDateTime start = params.getRangeStart();
         LocalDateTime end = params.getRangeEnd();
 
@@ -179,22 +176,20 @@ public class EventServiceImpl implements EventService {
             start = LocalDateTime.now();
         }
 
-        int pageNum = params.getPageParams().getFrom() / params.getPageParams().getSize();
-        Pageable pageable;
+        String text = (params.getText() != null && !params.getText().isBlank())
+                ? params.getText() : null;
 
-        if ("EVENT_DATE".equals(params.getSort()) || params.getSort() == null) {
-            pageable = PageRequest.of(pageNum, params.getPageParams().getSize(), Sort.by("eventDate").ascending());
-        } else {
-            pageable = PageRequest.of(pageNum, params.getPageParams().getSize());
+        int pageNum = params.getPageParams().getFrom() / params.getPageParams().getSize();
+        Pageable pageable = PageRequest.of(pageNum, params.getPageParams().getSize(),
+                Sort.by(Sort.Direction.ASC, "eventDate"));
+
+        if ("VIEWS".equals(params.getSort())) {
+            return getEventsSortedByViews(params, start);
         }
 
         try {
-            if ("VIEWS".equals(params.getSort())) {
-                return getEventsSortedByViews(params, start);
-            }
-
             Page<Event> eventsPage = eventRepository.findEventsByPublicFilters(
-                    params.getText(),
+                    text,
                     params.getCategories(),
                     params.getPaid(),
                     start,
@@ -210,9 +205,8 @@ public class EventServiceImpl implements EventService {
                         return eventMapper.toEventShortDto(event, viewsMap.getOrDefault(event.getId(), 0L), confirmed);
                     })
                     .collect(Collectors.toList());
-
         } catch (Exception e) {
-            log.error("Database error in public search: {}", e.getMessage());
+            log.error("Error in public filters: {}", e.getMessage());
             throw e;
         }
     }
