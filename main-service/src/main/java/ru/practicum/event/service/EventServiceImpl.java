@@ -190,19 +190,30 @@ public class EventServiceImpl implements EventService {
     }
 
     private List<EventShortDto> getEventsSortedByViews(PublicEventParams params, LocalDateTime rangeStart) {
-        Pageable unpaged = Pageable.unpaged();
-        Page<Event> allEvents = eventRepository.findEventsByPublicFilters(
-                params.getText(), params.getCategories(), params.getPaid(),
-                rangeStart, params.getRangeEnd(), params.getOnlyAvailable(), unpaged);
+        Pageable allPossibleEvents = PageRequest.of(0, Integer.MAX_VALUE);
 
-        Map<Long, Long> viewsMap = getViewsBatch(allEvents.getContent());
+        Page<Event> allEventsPage = eventRepository.findEventsByPublicFilters(
+                params.getText(),
+                params.getCategories(),
+                params.getPaid(),
+                rangeStart,
+                params.getRangeEnd(),
+                params.getOnlyAvailable(),
+                allPossibleEvents);
 
-        return allEvents.getContent().stream()
-                .map(event -> eventMapper.toEventShortDto(event, viewsMap.getOrDefault(event.getId(), 0L),
-                        requestRepository.countByEventIdAndStatus(event.getId(), RequestState.CONFIRMED)))
-                .sorted(Comparator.comparing(EventShortDto::getViews).reversed()) // Сортировка в памяти
-                .skip(params.getPageParams().getFrom()) // Ручная пагинация
-                .limit(params.getPageParams().getSize())
+        List<Event> events = allEventsPage.getContent();
+
+        Map<Long, Long> viewsMap = getViewsBatch(events);
+
+        return events.stream()
+                .map(event -> {
+                    Long views = viewsMap.getOrDefault(event.getId(), 0L);
+                    Long confirmed = requestRepository.countByEventIdAndStatus(event.getId(), RequestState.CONFIRMED);
+                    return eventMapper.toEventShortDto(event, views, confirmed);
+                })
+                .sorted(Comparator.comparing(EventShortDto::getViews).reversed())
+                .skip(params.getPageParams().getFrom() != null ? params.getPageParams().getFrom() : 0)
+                .limit(params.getPageParams().getSize() != null ? params.getPageParams().getSize() : 10)
                 .collect(Collectors.toList());
     }
 
