@@ -2,10 +2,7 @@ package ru.practicum.request.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import ru.practicum.event.model.Event;
 import ru.practicum.user.model.User;
 
@@ -18,23 +15,26 @@ import java.util.Objects;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "requests")
+@Builder
 public class Request {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requester_id")
     private User requester;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id")
     private Event event;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private RequestState status;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(name = "created", nullable = false)
     private LocalDateTime created;
 
     @Override

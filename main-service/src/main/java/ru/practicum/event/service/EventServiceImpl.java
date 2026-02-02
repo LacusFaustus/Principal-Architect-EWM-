@@ -226,41 +226,38 @@ public class EventServiceImpl implements EventService {
                 "ewm-main-service", request.getRequestURI(), request.getRemoteAddr(), LocalDateTime.now()));
     }
 
-    // === Participation Requests (Реальная логика) ===
-
     @Override
     @Transactional
     public ParticipationRequestDto postRequest(Long userId, Long eventId) {
-        User user = checkUserExists(userId);
-        Event event = checkEventExists(eventId);
+        User requester = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found"));
 
         if (requestRepository.existsByRequesterIdAndEventId(userId, eventId)) {
-            throw new ConflictException("Repeated request not allowed");
+            throw new ConflictException("Request already exists");
         }
         if (event.getInitiator().getId().equals(userId)) {
-            throw new ConflictException("Initiator cannot participate in own event");
+            throw new ConflictException("Initiator cannot request participation");
         }
         if (event.getState() != EventState.PUBLISHED) {
             throw new ConflictException("Event is not published");
         }
 
-        Long confirmedCount = requestRepository.countByEventIdAndStatus(eventId, RequestState.CONFIRMED);
-        if (event.getParticipantLimit() != 0 && confirmedCount >= event.getParticipantLimit()) {
+        Long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestState.CONFIRMED);
+        if (event.getParticipantLimit() != 0 && confirmedRequests >= event.getParticipantLimit()) {
             throw new ConflictException("Participant limit reached");
         }
 
-        Request req = new Request();
-        req.setRequester(user);
-        req.setEvent(event);
-        req.setCreated(LocalDateTime.now());
+        Request request = Request.builder()
+                .requester(requester)
+                .event(event)
+                .created(LocalDateTime.now())
+                .status((!event.getRequestModeration() || event.getParticipantLimit() == 0) ?
+                        RequestState.CONFIRMED : RequestState.PENDING)
+                .build();
 
-        if (!event.getRequestModeration() || event.getParticipantLimit() == 0) {
-            req.setStatus(RequestState.CONFIRMED);
-        } else {
-            req.setStatus(RequestState.PENDING);
-        }
-
-        return requestMapper.mapToRequestDto(requestRepository.save(req));
+        return requestMapper.mapToRequestDto(requestRepository.save(request));
     }
 
     @Override
