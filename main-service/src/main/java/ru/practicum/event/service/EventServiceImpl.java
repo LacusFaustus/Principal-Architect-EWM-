@@ -269,7 +269,9 @@ public class EventServiceImpl implements EventService {
         Request request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException("Request not found"));
 
-        if (!request.getRequester().equals(userId)) {
+        User user = checkUserExists(userId);
+
+        if (!request.getRequester().equals(user)) {
             throw new NotFoundException("Request does not belong to user");
         }
 
