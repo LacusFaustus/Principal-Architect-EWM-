@@ -24,9 +24,6 @@ import ru.practicum.event.repository.EventRepository;
 import ru.practicum.handler.exception.BadRequestException;
 import ru.practicum.handler.exception.ConflictException;
 import ru.practicum.handler.exception.NotFoundException;
-import ru.practicum.request.dto.ParticipationRequestDto;
-import ru.practicum.request.mapper.RequestMapper;
-import ru.practicum.request.model.Request;
 import ru.practicum.request.model.RequestState;
 import ru.practicum.request.repository.RequestRepository;
 import ru.practicum.user.model.User;
@@ -46,7 +43,6 @@ public class EventServiceImpl implements EventService {
     private final UserRepository userRepository;
     private final RequestRepository requestRepository;
     private final EventMapper eventMapper;
-    private final RequestMapper requestMapper;
     private final StatClient statClient;
 
     @Override
@@ -256,129 +252,6 @@ public class EventServiceImpl implements EventService {
         } catch (Exception e) {
             log.error("Ошибка при сохранении статистики: {}", e.getMessage());
         }
-    }
-
-    @Override
-    @Transactional
-    public ParticipationRequestDto postRequest(Long userId, Long eventId) {
-        User requester = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event not found"));
-
-        if (requestRepository.existsByRequesterIdAndEventId(userId, eventId)) {
-            throw new ConflictException("Request already exists");
-        }
-        if (event.getInitiator().getId().equals(userId)) {
-            throw new ConflictException("Initiator cannot request participation");
-        }
-        if (event.getState() != EventState.PUBLISHED) {
-            throw new ConflictException("Event is not published");
-        }
-
-        Long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestState.CONFIRMED);
-        if (event.getParticipantLimit() != 0 && confirmedRequests >= event.getParticipantLimit()) {
-            throw new ConflictException("Participant limit reached");
-        }
-
-        Request request = Request.builder()
-                .requester(requester)
-                .event(event)
-                .created(LocalDateTime.now())
-                .status((!event.getRequestModeration() || event.getParticipantLimit() == 0) ?
-                        RequestState.CONFIRMED : RequestState.PENDING)
-                .build();
-
-        return requestMapper.mapToRequestDto(requestRepository.save(request));
-    }
-
-    @Override
-    @Transactional
-    public ParticipationRequestDto cancelParticipationRequest(Long userId, Long requestId) {
-        Request request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new NotFoundException("Request not found"));
-
-        User user = checkUserExists(userId);
-
-        if (!request.getRequester().equals(user)) {
-            throw new NotFoundException("Request does not belong to user");
-        }
-
-        request.setStatus(RequestState.CANCELED);
-        return requestMapper.mapToRequestDto(requestRepository.save(request));
-    }
-
-    @Override
-    @Transactional
-    public EventRequestStatusUpdateResult updateEventRequestsStatus(Long userId, Long eventId,
-                                                                    EventRequestStatusUpdateRequest updateReq) {
-        checkUserExists(userId);
-        Event event = checkEventExists(eventId);
-
-        if (!event.getInitiator().getId().equals(userId)) {
-            throw new ConflictException("User is not initiator");
-        }
-
-        List<Request> requests = requestRepository.findAllByIdIn(updateReq.getRequestIds());
-
-        // Валидация: статус можно менять только у PENDING
-        if (requests.stream().anyMatch(r -> r.getStatus() != RequestState.PENDING)) {
-            throw new ConflictException("Requests must be in PENDING state");
-        }
-
-        List<ParticipationRequestDto> confirmed = new ArrayList<>();
-        List<ParticipationRequestDto> rejected = new ArrayList<>();
-
-        if (updateReq.getStatus().equals("REJECTED")) {
-            requests.forEach(r -> {
-                r.setStatus(RequestState.REJECTED);
-                rejected.add(requestMapper.mapToRequestDto(r));
-            });
-            requestRepository.saveAll(requests);
-        } else {
-            // Логика подтверждения с контролем лимита
-            Long currentCount = requestRepository.countByEventIdAndStatus(eventId, RequestState.CONFIRMED);
-            long limit = event.getParticipantLimit();
-
-            if (limit > 0 && currentCount >= limit) {
-                throw new ConflictException("Limit reached");
-            }
-
-            for (Request r : requests) {
-                if (limit > 0 && currentCount >= limit) {
-                    // Если лимит кончился прямо в процессе - отклоняем оставшиеся
-                    r.setStatus(RequestState.REJECTED);
-                    rejected.add(requestMapper.mapToRequestDto(r));
-                } else {
-                    r.setStatus(RequestState.CONFIRMED);
-                    confirmed.add(requestMapper.mapToRequestDto(r));
-                    currentCount++;
-                }
-            }
-            requestRepository.saveAll(requests);
-        }
-
-        return new EventRequestStatusUpdateResult(confirmed, rejected);
-    }
-
-    @Override
-    public List<ParticipationRequestDto> getEventParticipationRequests(Long userId, Long eventId) {
-        checkUserExists(userId);
-        Event event = checkEventExists(eventId);
-        if (!event.getInitiator().getId().equals(userId)) {
-            throw new ConflictException("User is not initiator");
-        }
-        return requestRepository.findAllByEventId(eventId).stream()
-                .map(requestMapper::mapToRequestDto)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<ParticipationRequestDto> getUserParticipationRequests(Long userId) {
-        checkUserExists(userId);
-        return requestRepository.findAllByRequesterId(userId).stream()
-                .map(requestMapper::mapToRequestDto)
-                .collect(Collectors.toList());
     }
 
     // === Helpers ===

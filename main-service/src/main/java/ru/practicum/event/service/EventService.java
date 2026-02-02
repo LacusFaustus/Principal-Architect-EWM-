@@ -3,7 +3,6 @@ package ru.practicum.event.service;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Pageable;
 import ru.practicum.event.dto.*;
-import ru.practicum.request.dto.ParticipationRequestDto;
 
 import java.util.List;
 
@@ -31,24 +30,6 @@ public interface EventService {
 
     // Получение события по ID для публичного доступа
     EventFullDto getEventById(Long eventId, HttpServletRequest request);
-
-    // Создание заявки на участие
-    ParticipationRequestDto postRequest(Long userId, Long eventId);
-
-    // Отмена заявки на участие пользователем
-    ParticipationRequestDto cancelParticipationRequest(Long userId, Long requestId);
-
-    // Обновление статуса заявок на участие (для инициатора события)
-    EventRequestStatusUpdateResult updateEventRequestsStatus(
-            Long userId,
-            Long eventId,
-            EventRequestStatusUpdateRequest updateRequest);
-
-    // Получение заявок на участие в событии пользователя
-    List<ParticipationRequestDto> getEventParticipationRequests(Long userId, Long eventId);
-
-    // Получение заявок на участие пользователя
-    List<ParticipationRequestDto> getUserParticipationRequests(Long userId);
 
     // Сохранение статистики
     void saveStats(HttpServletRequest request);

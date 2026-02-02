@@ -16,9 +16,4 @@ public interface CompilationMapper {
     @Mapping(target = "events", source = "eventShortDtos")
     CompilationDto toCompilationDto(Compilation compilation, List<EventShortDto> eventShortDtos);
 
-    List<CompilationDto> toCompilationDtoList(List<Compilation> compilations);
-
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "events", ignore = true)
-    void updateCompilationFromDto(UpdateCompilationRequest dto, @MappingTarget Compilation compilation);
 }

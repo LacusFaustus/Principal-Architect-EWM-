@@ -13,7 +13,6 @@ import ru.practicum.compilations.dto.NewCompilationDto;
 import ru.practicum.compilations.dto.UpdateCompilationRequest;
 import ru.practicum.compilations.dto.CompilationMapper;
 import ru.practicum.compilations.model.Compilation;
-import ru.practicum.compilations.service.CompilationService;
 import ru.practicum.compilations.repository.CompilationRepository;
 import ru.practicum.dto.ViewStatsDto;
 import ru.practicum.event.dto.EventShortDto;
@@ -170,11 +169,6 @@ public class CompilationServiceImpl implements CompilationService {
         return views;
     }
 
-    /**
-     * Получение количества подтвержденных заявок на участие.
-     * Временная реализация - всегда возвращает 0.
-     * TODO: Реализовать получение данных из ParticipationRequestRepository
-     */
     private Map<Long, Long> getConfirmedRequests(List<Event> events) {
         Map<Long, Long> confirmedRequests = new HashMap<>();
         // Временная реализация - возвращаем 0 для всех событий

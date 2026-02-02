@@ -173,9 +173,9 @@ public class RequestServiceImpl implements RequestService {
         EventRequestStatusUpdateResult result = new EventRequestStatusUpdateResult();
         result.setConfirmedRequests(confirmed);
         result.setRejectedRequests(rejected);
+
         return result;
     }
-
 
     private User checkUserExists(Long userId) {
         return userRepository.findById(userId)
@@ -201,19 +201,6 @@ public class RequestServiceImpl implements RequestService {
                 });
     }
 
-    private void checkConflictCancelRequest(Request request, Long userId) {
-        if (!Objects.equals(request.getRequester().getId(), userId)) {
-            log.error("User ID={} cannot canceled Request ID={}", userId, request.getId());
-            throw new ConflictException("This user cannot canceled request");
-        }
-    }
-
-    private void checkConflictRequest(Event event, User user) {
-        checkEventInitiator(user.getId(), event);
-        checkEventStatus(event);
-        checkEventLimit(event);
-    }
-
     private void checkEventInitiator(Long userId, Event event) {
         if (event.getInitiator().getId().equals(userId)) {
             log.error("User ID={} initiator event ID={}", userId, event.getId());
@@ -228,19 +215,6 @@ public class RequestServiceImpl implements RequestService {
             log.error("Try double request user ID={}, for event ID={}=", userId, eventId);
             throw new ConflictException("Duplicate requests are not allowed.");
         }
-    }
-
-    private Long checkEventLimit(Event event) {
-        Integer eventLimit = event.getParticipantLimit();
-        Long eventConfirmRequests = requestRepository.countByEventIdAndStatusIn(event.getId(),
-                List.of(RequestState.PENDING, RequestState.CONFIRMED));
-
-        if (eventLimit - eventConfirmRequests == 0) {
-            log.error("Participant limit reached event ID={}", event.getId());
-            throw new ConflictException("Participant limit reached");
-        }
-
-        return eventConfirmRequests;
     }
 
     private void checkEventStatus(Event event) {
