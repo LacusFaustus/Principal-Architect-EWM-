@@ -37,8 +37,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "OR LOWER(e.description) LIKE LOWER(CONCAT('%', :text, '%'))) " +
             "AND (:categories IS NULL OR e.category.id IN :categories) " +
             "AND (:paid IS NULL OR e.paid = :paid) " +
-            "AND (:rangeStart IS NULL OR e.eventDate >= :rangeStart) " +
-            "AND (:rangeEnd IS NULL OR e.eventDate <= :rangeEnd) " +
+            "AND (CAST(:rangeStart AS timestamp) IS NULL OR e.eventDate >= :rangeStart) " +
+            "AND (CAST(:rangeEnd AS timestamp) IS NULL OR e.eventDate <= :rangeEnd) " +
             "AND (:onlyAvailable = false OR e.participantLimit = 0 OR " +
             "e.participantLimit > (SELECT COUNT(r) FROM Request r " +
             "WHERE r.event.id = e.id AND r.status = 'CONFIRMED'))")
