@@ -31,14 +31,19 @@ public class AdminEventController {
             @RequestParam(name = "from", defaultValue = "0") Integer from,
             @RequestParam(name = "size", defaultValue = "10") Integer size) {
 
-            PageParams pageParams = new PageParams(from, size);
-            EventParams params = new EventParams(users, states, categories, rangeStart, rangeEnd, pageParams);
-            return ResponseEntity.ok(eventService.getEventsByAdminFilters(params));
+        PageParams pageParams = new PageParams(from, size);
+        EventParams params = new EventParams(users, states, categories, rangeStart, rangeEnd, pageParams);
+
+        return ResponseEntity.ok()
+                .body(eventService.getEventsByAdminFilters(params));
     }
 
     @PatchMapping("/{eventId}")
-    public ResponseEntity<EventFullDto> updateEventByAdmin(@PathVariable Long eventId,
-                                                           @Valid @RequestBody UpdateEventAdminRequest updateEventAdminRequest) {
-            return ResponseEntity.ok(eventService.patchEventByAdmin(eventId, updateEventAdminRequest));
+    public ResponseEntity<EventFullDto> updateEventByAdmin(
+            @PathVariable Long eventId,
+            @Valid @RequestBody UpdateEventAdminRequest updateEventAdminRequest) {
+
+        return ResponseEntity.ok()
+                .body(eventService.patchEventByAdmin(eventId, updateEventAdminRequest));
     }
 }

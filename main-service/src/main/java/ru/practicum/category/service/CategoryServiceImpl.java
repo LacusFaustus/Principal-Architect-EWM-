@@ -30,7 +30,6 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryDto postCategory(NewCategoryRequest newCategoryRequest) {
         log.info("POST category: {}", newCategoryRequest);
 
-        // Проверяем, нет ли уже категории с таким именем
         if (categoryRepository.findByName(newCategoryRequest.getName()).isPresent()) {
             log.error("Category with name '{}' already exists", newCategoryRequest.getName());
             throw new ConflictException("Category with this name already exists");
@@ -63,15 +62,15 @@ public class CategoryServiceImpl implements CategoryService {
         String newName = updateCategoryDto.getName();
 
         if (newName != null && !newName.equals(category.getName())) {
-            // Проверяем, не используется ли это имя другой категорией
+
             Optional<Category> existingCategory = categoryRepository.findByName(newName);
+
             if (existingCategory.isPresent()) {
                 log.error("Category with name '{}' already exists", newName);
                 throw new ConflictException("Category with this name already exists");
             }
         }
 
-        // Обновляем имя, если оно указано
         if (newName != null) {
             category.setName(newName);
         }
@@ -108,6 +107,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     private Category checkCategoryExists(Long catId) {
+
         return categoryRepository.findById(catId)
                 .orElseThrow(() -> {
                     log.error("Category {} not found", catId);

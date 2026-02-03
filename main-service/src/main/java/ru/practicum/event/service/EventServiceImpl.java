@@ -104,8 +104,10 @@ public class EventServiceImpl implements EventService {
                 updateRequest.getRequestModeration(), updateRequest.getTitle());
 
         if (updateRequest.getStateAction() != null) {
+
             if (updateRequest.getStateAction() == StateActionUser.SEND_TO_REVIEW) {
                 event.setState(EventState.PENDING);
+
             } else {
                 event.setState(EventState.CANCELED);
             }
@@ -140,16 +142,22 @@ public class EventServiceImpl implements EventService {
         }
 
         if (updateRequest.getStateAction() != null) {
+
             if (updateRequest.getStateAction() == StateActionAdmin.PUBLISH_EVENT) {
+
                 if (event.getState() != EventState.PENDING) {
                     throw new ConflictException("Cannot publish event because it's not in PENDING state");
                 }
+
                 event.setState(EventState.PUBLISHED);
                 event.setPublishedOn(LocalDateTime.now());
+
             } else {
+
                 if (event.getState() == EventState.PUBLISHED) {
                     throw new ConflictException("Cannot reject event because it's already published");
                 }
+
                 event.setState(EventState.CANCELED);
             }
         }
@@ -201,6 +209,7 @@ public class EventServiceImpl implements EventService {
                         return eventMapper.toEventShortDto(event, viewsMap.getOrDefault(event.getId(), 0L), confirmed);
                     })
                     .collect(Collectors.toList());
+
         } catch (Exception e) {
             log.error("Error in public filters: {}", e.getMessage());
             throw e;
@@ -254,13 +263,12 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    // === Helpers ===
-
     private Long getViews(Long eventId) {
         Event event = new Event();
         event.setId(eventId);
 
         Map<Long, Long> map = getViewsBatch(List.of(event));
+
         return map.getOrDefault(eventId, 0L);
     }
 
@@ -277,8 +285,10 @@ public class EventServiceImpl implements EventService {
         try {
             List<ViewStatsDto> stats = statClient.getStats(start, end, uris, true);
             Map<Long, Long> result = new HashMap<>();
+
             for (ViewStatsDto dto : stats) {
                 String uri = dto.getUri();
+
                 try {
                     Long id = Long.parseLong(uri.substring(uri.lastIndexOf("/") + 1));
                     result.put(id, dto.getHits());
@@ -297,31 +307,45 @@ public class EventServiceImpl implements EventService {
                                    String description, LocalDateTime eventDate,
                                    ru.practicum.location.dto.Location location, Boolean paid,
                                    Integer participantLimit, Boolean requestModeration, String title) {
+
         if (annotation != null && !annotation.isBlank()) event.setAnnotation(annotation);
+
         if (categoryId != null) event.setCategory(checkCategoryExists(categoryId));
+
         if (description != null && !description.isBlank()) event.setDescription(description);
+
         if (eventDate != null) event.setEventDate(eventDate);
+
         if (location != null)
+
             event.setLocation(new ru.practicum.location.model.LocationEntity(location.getLat(), location.getLon()));
+
         if (paid != null) event.setPaid(paid);
+
         if (participantLimit != null) event.setParticipantLimit(participantLimit);
+
         if (requestModeration != null) event.setRequestModeration(requestModeration);
+
         if (title != null && !title.isBlank()) event.setTitle(title);
     }
 
     private User checkUserExists(Long userId) {
+
         return userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User " + userId + " not found"));
     }
 
     private Category checkCategoryExists(Long catId) {
+
         return categoryRepository.findById(catId).orElseThrow(() -> new NotFoundException("Category " + catId + " not found"));
     }
 
     private Event checkEventExists(Long eventId) {
+
         return eventRepository.findById(eventId).orElseThrow(() -> new NotFoundException("Event " + eventId + " not found"));
     }
 
     private void validateEventDate(LocalDateTime eventDate, int hours) {
+
         if (eventDate != null && eventDate.isBefore(LocalDateTime.now().plusHours(hours))) {
             throw new BadRequestException("Event date too early");
         }

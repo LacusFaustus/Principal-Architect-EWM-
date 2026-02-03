@@ -47,7 +47,8 @@ public class PublicEventController {
 
         eventService.saveStats(request);
 
-        return ResponseEntity.ok(events);
+        return ResponseEntity.ok()
+                .body(events);
     }
 
     @GetMapping("/{id}")
@@ -58,6 +59,7 @@ public class PublicEventController {
 
         eventService.saveStats(request);
 
-        return ResponseEntity.ok(event);
+        return ResponseEntity.ok()
+                .body(event);
     }
 }

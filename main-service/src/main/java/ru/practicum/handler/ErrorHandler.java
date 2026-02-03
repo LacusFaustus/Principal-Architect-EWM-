@@ -24,14 +24,13 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestControllerAdvice
 public class ErrorHandler {
-
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    // 404: Объект не найден
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ApiError handleNotFound(final NotFoundException e) {
         log.error("404 Not Found: {}", e.getMessage());
+
         return new ApiError(
                 getStackTrace(e),
                 e.getMessage(),
@@ -41,11 +40,11 @@ public class ErrorHandler {
         );
     }
 
-    // 409: Конфликт (бизнес-логика или уникальность в БД)
     @ExceptionHandler({ConflictException.class, DataIntegrityViolationException.class})
     @ResponseStatus(HttpStatus.CONFLICT)
     public ApiError handleConflict(final Exception e) {
         log.error("409 Conflict: {}", e.getMessage());
+
         return new ApiError(
                 getStackTrace(e),
                 e.getMessage(),
@@ -55,7 +54,6 @@ public class ErrorHandler {
         );
     }
 
-    // 400: Нарушение валидации или условий запроса
     @ExceptionHandler({
             MethodArgumentNotValidException.class,
             ConstraintViolationException.class,
@@ -77,11 +75,11 @@ public class ErrorHandler {
         );
     }
 
-    // 500: Все остальные непредвиденные ошибки
     @ExceptionHandler(Throwable.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiError handleThrowable(final Throwable e) {
         log.error("500 Internal Server Error: {}", e.getMessage(), e);
+
         return new ApiError(
                 getStackTrace(e),
                 e.getMessage(),
@@ -92,6 +90,7 @@ public class ErrorHandler {
     }
 
     private List<String> getStackTrace(Throwable e) {
+
         return Arrays.stream(e.getStackTrace())
                 .map(StackTraceElement::toString)
                 .collect(Collectors.toList());

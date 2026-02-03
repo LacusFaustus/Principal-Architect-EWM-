@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.compilations.dto.CompilationDto;
 import ru.practicum.compilations.dto.NewCompilationDto;
@@ -18,24 +19,30 @@ public class AdminCompilationController {
     private final CompilationService compilationService;
 
     @PostMapping()
-    @ResponseStatus(HttpStatus.CREATED)
-    CompilationDto add(@RequestBody @Valid NewCompilationDto newCompilationDto) {
-        CompilationDto compilationDto = compilationService.add(newCompilationDto);
+    public ResponseEntity<CompilationDto> add(
+            @RequestBody @Valid NewCompilationDto newCompilationDto) {
 
-        return compilationDto;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(compilationService.add(newCompilationDto));
     }
 
     @PatchMapping("/{comp-id}")
-    CompilationDto update(@PathVariable(PATH) @Positive long compId,
-                          @RequestBody @Valid UpdateCompilationRequest updateCompilationDto) {
-        CompilationDto compilationDto = compilationService.update(compId, updateCompilationDto);
+    public ResponseEntity<CompilationDto> update(
+            @PathVariable(PATH) @Positive long compId,
+            @RequestBody @Valid UpdateCompilationRequest updateCompilationDto) {
 
-        return compilationDto;
+        return ResponseEntity.ok()
+                .body(compilationService.update(compId, updateCompilationDto));
     }
 
     @DeleteMapping("/{comp-id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void delete(@PathVariable(PATH) @Positive long compId) {
+    public ResponseEntity<Void> delete(
+            @PathVariable(PATH) @Positive long compId) {
+
         compilationService.delete(compId);
+
+        return ResponseEntity.noContent()
+                .build();
     }
 }

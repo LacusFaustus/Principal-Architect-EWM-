@@ -19,19 +19,25 @@ public class PrivateUserRequestController {
     public ResponseEntity<ParticipationRequestDto> postRequest(
             @PathVariable Long userId,
             @RequestParam Long eventId) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(requestService.postRequest(userId, eventId));
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(requestService.postRequest(userId, eventId));
     }
 
     @GetMapping
-    public ResponseEntity<List<ParticipationRequestDto>> getUserRequests(@PathVariable Long userId) {
-        return ResponseEntity.ok().body(requestService.getRequests(userId));
+    public ResponseEntity<List<ParticipationRequestDto>> getUserRequests(
+            @PathVariable Long userId) {
+
+        return ResponseEntity.ok()
+                .body(requestService.getRequests(userId));
     }
 
     @PatchMapping("/{requestId}/cancel")
     public ResponseEntity<ParticipationRequestDto> cancelRequest(
             @PathVariable Long userId,
             @PathVariable Long requestId) {
-        return ResponseEntity.ok().body(requestService.patchRequest(userId, requestId));
 
+        return ResponseEntity.ok()
+                .body(requestService.patchRequest(userId, requestId));
     }
 }

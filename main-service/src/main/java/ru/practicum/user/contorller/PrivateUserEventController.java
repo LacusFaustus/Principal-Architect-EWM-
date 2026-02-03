@@ -26,37 +26,52 @@ public class PrivateUserEventController {
 
 
     @GetMapping("/events")
-    public ResponseEntity<List<EventShortDto>> getEvents(@PathVariable Long userId,
-                                                         @RequestParam(name = "from", defaultValue = "0") Integer from,
-                                                         @RequestParam(name = "size", defaultValue = "10") Integer size) {
+    public ResponseEntity<List<EventShortDto>> getEvents(
+            @PathVariable Long userId,
+            @RequestParam(name = "from", defaultValue = "0") Integer from,
+            @RequestParam(name = "size", defaultValue = "10") Integer size) {
+
         Pageable pageable = PageRequest.of(from / size, size, Sort.by("id").ascending());
-        return ResponseEntity.ok(eventService.getEvents(userId, pageable));
+
+        return ResponseEntity.ok()
+                .body(eventService.getEvents(userId, pageable));
     }
 
     @PostMapping("/events")
-    public ResponseEntity<EventFullDto> postEvent(@PathVariable Long userId,
-                                                  @Valid @RequestBody NewEventDto newEventDto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(eventService.postEvent(userId, newEventDto));
+    public ResponseEntity<EventFullDto> postEvent(
+            @PathVariable Long userId,
+            @Valid @RequestBody NewEventDto newEventDto) {
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(eventService.postEvent(userId, newEventDto));
     }
 
     @GetMapping("/events/{eventId}")
-    public ResponseEntity<EventFullDto> getEvent(@PathVariable Long userId,
-                                                 @PathVariable Long eventId) {
-        return ResponseEntity.ok(eventService.getEvent(userId, eventId));
+    public ResponseEntity<EventFullDto> getEvent(
+            @PathVariable Long userId,
+            @PathVariable Long eventId) {
+
+        return ResponseEntity.ok()
+                .body(eventService.getEvent(userId, eventId));
     }
 
     @PatchMapping("/events/{eventId}")
-    public ResponseEntity<EventFullDto> patchEvent(@PathVariable Long userId,
-                                                   @PathVariable Long eventId,
-                                                   @Valid @RequestBody UpdateEventUserRequest updateEventUserRequest) {
-        return ResponseEntity.ok(eventService.patchEventByUser(userId, eventId, updateEventUserRequest));
+    public ResponseEntity<EventFullDto> patchEvent(
+            @PathVariable Long userId,
+            @PathVariable Long eventId,
+            @Valid @RequestBody UpdateEventUserRequest updateEventUserRequest) {
+
+        return ResponseEntity.ok()
+                .body(eventService.patchEventByUser(userId, eventId, updateEventUserRequest));
     }
 
     @GetMapping("/events/{eventId}/requests")
     public ResponseEntity<List<ParticipationRequestDto>> getEventRequests(
             @PathVariable Long userId,
             @PathVariable Long eventId) {
-        return ResponseEntity.ok().body(requestService.getEventRequests(userId, eventId));
+
+        return ResponseEntity.ok()
+                .body(requestService.getEventRequests(userId, eventId));
     }
 
     @PatchMapping("/events/{eventId}/requests")
@@ -64,6 +79,8 @@ public class PrivateUserEventController {
             @PathVariable Long userId,
             @PathVariable Long eventId,
             @Valid @RequestBody EventRequestStatusUpdateRequest updateDto) {
-        return ResponseEntity.ok().body(requestService.patchEventRequestsStatus(userId, eventId, updateDto));
+
+        return ResponseEntity.ok()
+                .body(requestService.patchEventRequestsStatus(userId, eventId, updateDto));
     }
 }

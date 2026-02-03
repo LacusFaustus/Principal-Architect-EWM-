@@ -59,7 +59,6 @@ public class RequestServiceImpl implements RequestService {
         checkEventInitiator(userId, event);
         checkEventStatus(event);
 
-        // Считаем только подтвержденные для проверки лимита
         long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestState.CONFIRMED);
 
         if (event.getParticipantLimit() != 0 && confirmedRequests >= event.getParticipantLimit()) {
@@ -67,7 +66,7 @@ public class RequestServiceImpl implements RequestService {
         }
 
         RequestState status = RequestState.PENDING;
-        // Если пре-модерация не нужна или лимит 0 — подтверждаем сразу
+
         if (!event.getRequestModeration() || event.getParticipantLimit() == 0) {
             status = RequestState.CONFIRMED;
         }
@@ -90,12 +89,10 @@ public class RequestServiceImpl implements RequestService {
         checkUserExists(userId);
         Request request = checkRequestExists(requestId);
 
-        // Проверка владельца заявки
         if (!Objects.equals(request.getRequester().getId(), userId)) {
             throw new ConflictException("User ID=" + userId + " is not the requester of ID=" + requestId);
         }
 
-        // ТЕСТ 5: Если заявка уже подтверждена, ее нельзя отменить (должен быть 409)
         if (request.getStatus().equals(RequestState.CONFIRMED)) {
             throw new ConflictException("Cannot cancel a confirmed request. Status is already CONFIRMED.");
         }
@@ -126,7 +123,6 @@ public class RequestServiceImpl implements RequestService {
         checkUserExists(userId);
         Event event = checkEventExists(eventId);
 
-        // Безопасное получение ID
         List<Long> ids = statusUpdateDto.getRequestIds();
         List<Request> requests = requestRepository.findByIdIn(ids);
 
@@ -134,14 +130,11 @@ public class RequestServiceImpl implements RequestService {
             return new EventRequestStatusUpdateResult();
         }
 
-        // Проверка, что все заявки в PENDING (409 если нет)
         checkRequestStatusForPatch(requests);
 
-        // Считаем текущее количество подтвержденных заявок
         long confirmedCount = requestRepository.countByEventIdAndStatus(eventId, RequestState.CONFIRMED);
         int limit = event.getParticipantLimit();
 
-        // Если лимит уже достигнут (и он не безлимитный)
         if (limit != 0 && confirmedCount >= limit) {
             throw new ConflictException("The participant limit has been reached. Cannot confirm more requests.");
         }
@@ -155,13 +148,13 @@ public class RequestServiceImpl implements RequestService {
                 request.setStatus(RequestState.REJECTED);
                 rejected.add(requestMapper.mapToRequestDto(request));
             } else if (newStatus == RequestState.CONFIRMED) {
-                // Если лимита нет или место еще есть
+
                 if (limit == 0 || confirmedCount < limit) {
                     request.setStatus(RequestState.CONFIRMED);
                     confirmedCount++;
                     confirmed.add(requestMapper.mapToRequestDto(request));
                 } else {
-                    // Если места кончились, пока мы шли по списку
+
                     request.setStatus(RequestState.REJECTED);
                     rejected.add(requestMapper.mapToRequestDto(request));
                 }
@@ -233,4 +226,3 @@ public class RequestServiceImpl implements RequestService {
         }
     }
 }
-

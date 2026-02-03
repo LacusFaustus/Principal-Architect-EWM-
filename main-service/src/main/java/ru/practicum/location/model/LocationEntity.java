@@ -1,15 +1,15 @@
 package ru.practicum.location.model;
 
 import jakarta.persistence.Embeddable;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Embeddable
-@Data
+@Getter
+@Setter
+@ToString
 @AllArgsConstructor
 @NoArgsConstructor
 public class LocationEntity {
-    private Float lat;
-    private Float lon;
+    private Double lat;
+    private Double lon;
 }

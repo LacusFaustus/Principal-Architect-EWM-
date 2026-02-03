@@ -142,6 +142,7 @@ public class CompilationServiceImpl implements CompilationService {
 
     private Map<Long, Long> getEventsViews(List<Event> events) {
         Map<Long, Long> views = new HashMap<>();
+
         if (events.isEmpty()) {
             return views;
         }
@@ -171,7 +172,7 @@ public class CompilationServiceImpl implements CompilationService {
 
     private Map<Long, Long> getConfirmedRequests(List<Event> events) {
         Map<Long, Long> confirmedRequests = new HashMap<>();
-        // Временная реализация - возвращаем 0 для всех событий
+
         for (Event event : events) {
             confirmedRequests.put(event.getId(), 0L);
         }

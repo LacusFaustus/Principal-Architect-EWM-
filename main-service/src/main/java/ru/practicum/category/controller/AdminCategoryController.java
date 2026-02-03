@@ -19,21 +19,29 @@ public class AdminCategoryController {
     private final CategoryService categoryService;
 
     @PostMapping
-    public ResponseEntity<CategoryDto> postCategory(@Valid @RequestBody NewCategoryRequest newCategoryRequest) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(categoryService.postCategory(newCategoryRequest));
+    public ResponseEntity<CategoryDto> postCategory(
+            @Valid @RequestBody NewCategoryRequest newCategoryRequest) {
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(categoryService.postCategory(newCategoryRequest));
     }
 
     @DeleteMapping("/{catId}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable("catId") Long catId) {
+    public ResponseEntity<Void> deleteCategory(
+            @PathVariable("catId") Long catId) {
+
         categoryService.deleteCategory(catId);
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.noContent()
+                .build();
     }
 
     @PatchMapping("/{catId}")
-    public ResponseEntity<CategoryDto> patchCategory(@PathVariable("catId") Long catId,
-                                                     @Valid @RequestBody UpdateCategoryDto updateCategoryDto) {
-        return ResponseEntity.ok().body(categoryService.patchCategory(catId, updateCategoryDto));
+    public ResponseEntity<CategoryDto> patchCategory(
+            @PathVariable("catId") Long catId,
+            @Valid @RequestBody UpdateCategoryDto updateCategoryDto) {
+
+        return ResponseEntity.ok()
+                .body(categoryService.patchCategory(catId, updateCategoryDto));
     }
 }
-

@@ -15,5 +15,4 @@ public interface CompilationMapper {
 
     @Mapping(target = "events", source = "eventShortDtos")
     CompilationDto toCompilationDto(Compilation compilation, List<EventShortDto> eventShortDtos);
-
 }

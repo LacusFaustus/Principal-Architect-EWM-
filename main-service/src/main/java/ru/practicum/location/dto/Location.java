@@ -1,17 +1,16 @@
 package ru.practicum.location.dto;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@ToString
 @AllArgsConstructor
 @NoArgsConstructor
 public class Location {
     @NotNull
-    private Float lat;
-
+    private Double lat;
     @NotNull
-    private Float lon;
+    private Double lon;
 }

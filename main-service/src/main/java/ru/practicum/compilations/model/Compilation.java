@@ -11,6 +11,7 @@ import java.util.Set;
 @Table(name = "compilations")
 @Setter
 @Getter
+@ToString
 @AllArgsConstructor
 @NoArgsConstructor
 public class Compilation {

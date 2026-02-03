@@ -3,6 +3,7 @@ package ru.practicum.compilations.controller;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.compilations.dto.CompilationDto;
 import ru.practicum.compilations.dto.CompilationSearchParam;
@@ -18,17 +19,20 @@ public class CompilationController {
     private final CompilationService compilationService;
 
     @GetMapping("/{comp-id}")
-    CompilationDto get(@PathVariable(PATH) @Positive long compId) {
-        CompilationDto compilationDto = compilationService.get(compId);
+    public ResponseEntity<CompilationDto> get(@PathVariable(PATH) @Positive long compId) {
 
-        return compilationDto;
+        return ResponseEntity.ok()
+                .body(compilationService.get(compId));
     }
 
     @GetMapping
-    List<CompilationDto> getCompilations(@RequestParam(required = false, name = "pinned") Boolean pinned,
-                                         @RequestParam(name = "from", defaultValue = "0") @PositiveOrZero int from,
-                                         @RequestParam(name = "size", defaultValue = "10") @PositiveOrZero int size) {
+    public ResponseEntity<List<CompilationDto>> getCompilations(
+            @RequestParam(required = false, name = "pinned") Boolean pinned,
+            @RequestParam(name = "from", defaultValue = "0") @PositiveOrZero int from,
+            @RequestParam(name = "size", defaultValue = "10") @PositiveOrZero int size) {
+
         CompilationSearchParam params = new CompilationSearchParam(pinned, from, size);
-        return compilationService.getCompilations(params);
+
+        return ResponseEntity.ok().body(compilationService.getCompilations(params));
     }
 }

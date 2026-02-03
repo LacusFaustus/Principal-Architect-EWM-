@@ -13,7 +13,6 @@ import ru.practicum.user.model.User;
 
 @Mapper(componentModel = "spring")
 public interface EventMapper {
-
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "category", source = "category")
     @Mapping(target = "initiator", source = "user")

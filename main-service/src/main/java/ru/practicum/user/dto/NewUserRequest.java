@@ -1,10 +1,11 @@
 package ru.practicum.user.dto;
 
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@ToString
 @AllArgsConstructor
 public class NewUserRequest {
     @NotBlank(message = "empty or null email")
