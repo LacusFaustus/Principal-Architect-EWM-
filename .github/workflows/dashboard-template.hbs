@@ -874,7 +874,7 @@ body.theme-light code {
             </div>
             <div id="collapse-{{cursor.ref}}" class="collapse" aria-labelledby="requests-{{cursor.ref}}">
             <div class="card-body">
-                {{#with request}}
+                {{#with comment}}
                 {{#if description.content}}
                 <div class="row">
                     <div class="col-sm-12 mb-3">
@@ -898,8 +898,8 @@ body.theme-light code {
                         <div class="card border-info" style="width: 50rem;">
                             <div class="card-body">
                             <h5 class="card-title text-uppercase text-white text-center bg-info">Информация о запросе</h5>
-                            <span><i class="fas fa-info-circle"></i></span><strong> HTTP-метод запроса:</strong> <span class="badge-outline-success badge badge-success"> {{request.method}}</span><br>
-                            <span><i class="fas fa-info-circle"></i></span><strong> URL запроса:</strong> <a href="{{request.url}}" target="_blank">{{request.url}}</a><br>
+                            <span><i class="fas fa-info-circle"></i></span><strong> HTTP-метод запроса:</strong> <span class="badge-outline-success badge badge-success"> {{comment.method}}</span><br>
+                            <span><i class="fas fa-info-circle"></i></span><strong> URL запроса:</strong> <a href="{{comment.url}}" target="_blank">{{comment.url}}</a><br>
                             </div>
                         </div>
                         <div class="card border-info" style="width: 50rem;">
@@ -930,7 +930,7 @@ body.theme-light code {
                     </div>
                     </div>
                 </div>
-                {{#with request}}
+                {{#with comment}}
                 {{#unless @root.omitHeaders}}
                 {{#unless @root.skipSensitiveData}}
                 <div class="row">
@@ -967,7 +967,7 @@ body.theme-light code {
                 {{#unless @root.skipSensitiveData}}
                 {{#unless @root.omitRequestBodies}}
                 {{#isNotIn item.name @root.hideRequestBody}}
-                {{#with request}}
+                {{#with comment}}
                 {{#if body.raw}}
                 <div class="row">
                 <div class="col-sm-12 mb-3">
@@ -994,7 +994,7 @@ body.theme-light code {
                 {{#unless @root.skipSensitiveData}}
                 {{#unless @root.omitRequestBodies}}
                 {{#isNotIn item.name @root.hideRequestBody}}
-                {{#with request}}
+                {{#with comment}}
                 {{#if body.formdata.members}}
                     <div class="row">
                         <div class="col-sm-12 mb-3">
@@ -1021,7 +1021,7 @@ body.theme-light code {
                 {{#unless @root.skipSensitiveData}}
                 {{#unless @root.omitRequestBodies}}
                 {{#isNotIn item.name @root.hideRequestBody}}
-                {{#with request}}
+                {{#with comment}}
                 {{#if body.urlencoded.members}}
                     <div class="row">
                         <div class="col-sm-12 mb-3">
@@ -1048,7 +1048,7 @@ body.theme-light code {
                 {{#unless @root.skipSensitiveData}}
                 {{#unless @root.omitRequestBodies}}
                 {{#isNotIn item.name @root.hideRequestBody}}
-                {{#with request}}
+                {{#with comment}}
                 {{#if body.graphql}}
                 <div class="row">
                 <div class="col-sm-12 mb-3">
@@ -1219,7 +1219,7 @@ body.theme-light code {
                             </div>
                             </div>
                             {{else}}
-                            <h5 class="alert alert-success text-uppercase text-center">No Tests for this request</h5>
+                            <h5 class="alert alert-success text-uppercase text-center">No Tests for this comment</h5>
                             {{/if}}
                         </div>
                     </div>
