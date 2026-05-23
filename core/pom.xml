@@ -10,12 +10,10 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>stats-service</artifactId>
+    <artifactId>core</artifactId>
     <packaging>pom</packaging>
 
     <modules>
-        <module>stat-svc-client</module>
-        <module>stat-svc-service</module>
-        <module>stat-svc-dto</module>
+        <module>main-service</module>
     </modules>
 </project>
