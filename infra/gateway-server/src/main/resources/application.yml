@@ -5,18 +5,63 @@ spring:
   application:
     name: gateway-server
   cloud:
+    config:
+      enabled: false
     gateway:
       discovery:
         locator:
           enabled: true
           lower-case-service-id: true
       routes:
-        - id: main-service
-          uri: lb://main-service
+        # User Service routes
+        - id: user-service
+          uri: lb://user-service
           predicates:
-            - Path=/admin/**, /categories/**, /compilations/**, /events/**, /users/**
+            - Path=/admin/users/**, /users/**
           filters:
-            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: userServiceCB
+                fallbackUri: forward:/fallback/users
+
+        # Event Service routes
+        - id: event-service
+          uri: lb://event-service
+          predicates:
+            - Path=/admin/categories/**, /categories/**, /admin/compilations/**, /compilations/**, /admin/events/**, /events/**, /users/*/events/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: eventServiceCB
+                fallbackUri: forward:/fallback/events
+
+        # Request Service routes
+        - id: request-service
+          uri: lb://request-service
+          predicates:
+            - Path=/users/*/requests/**, /users/*/events/*/requests/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: requestServiceCB
+                fallbackUri: forward:/fallback/requests
+
+        # Comment Service routes
+        - id: comment-service
+          uri: lb://comment-service
+          predicates:
+            - Path=/comments/**, /admin/comments/**, /users/*/comments/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: commentServiceCB
+                fallbackUri: forward:/fallback/comments
+
+        # Stats Service routes
+        - id: stats-server
+          uri: lb://stats-server
+          predicates:
+            - Path=/hit, /stats
 
 eureka:
   client:
@@ -31,3 +76,9 @@ logging:
   level:
     org.springframework.cloud.gateway: DEBUG
     org.springframework.web: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

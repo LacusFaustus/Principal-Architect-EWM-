@@ -15,9 +15,8 @@ public class ErrorHandler {
     @ExceptionHandler(RuntimeException.class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     public ApiError handleStatClientException(RuntimeException ex) {
-        log.error("Внутренняя ошибка сервера: ", ex);
+        log.error("Internal server error: ", ex);
         return new ApiError(LocalDateTime.now(), HttpStatus.SERVICE_UNAVAILABLE.value(),
                 "Stats Service Unavailable", ex.getMessage());
-
     }
 }

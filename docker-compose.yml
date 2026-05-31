@@ -1,54 +1,206 @@
+version: '3.8'
+
 services:
+  # Discovery Server
+  discovery-server:
+    build: ./infra/discovery-server
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - ewm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Config Server
+  config-server:
+    build: ./infra/config-server
+    container_name: config-server
+    ports:
+      - "8082:8082"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    networks:
+      - ewm-network
+
+  # Gateway Server
+  gateway-server:
+    build: ./infra/gateway-server
+    container_name: gateway-server
+    ports:
+      - "8080:8080"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    networks:
+      - ewm-network
+
+  # User Database
+  user-db:
+    image: postgres:16.1
+    container_name: user-db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: userpass
+      POSTGRES_DB: userdb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d userdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ewm-network
+
+  # User Service
+  user-service:
+    build: ./core/user-service
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      user-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/userdb
+      - SERVER_PORT=8081
+    networks:
+      - ewm-network
+
+  # Event Database
+  event-db:
+    image: postgres:16.1
+    container_name: event-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: event
+      POSTGRES_PASSWORD: eventpass
+      POSTGRES_DB: eventdb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U event -d eventdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ewm-network
+
+  # Event Service
+  event-service:
+    build: ./core/event-service
+    container_name: event-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      event-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://event-db:5432/eventdb
+      - SERVER_PORT=8083
+    networks:
+      - ewm-network
+
+  # Request Database
+  request-db:
+    image: postgres:16.1
+    container_name: request-db
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: request
+      POSTGRES_PASSWORD: requestpass
+      POSTGRES_DB: requestdb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U request -d requestdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ewm-network
+
+  # Request Service
+  request-service:
+    build: ./core/request-service
+    container_name: request-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      request-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      event-service:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://request-db:5432/requestdb
+      - SERVER_PORT=8084
+    networks:
+      - ewm-network
+
+  # Stats Database
+  stats-db:
+    image: postgres:16.1
+    container_name: stats-db
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: stats
+      POSTGRES_PASSWORD: statspass
+      POSTGRES_DB: statsdb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stats -d statsdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ewm-network
+
+  # Stats Service
   stats-server:
-    container_name: stats-service
-    build:
-      context: ./stats-service/stat-svc-service
+    build: ./stats-service/stat-svc-service
+    container_name: stats-server
     ports:
       - "9090:9090"
     depends_on:
       stats-db:
         condition: service_healthy
+      discovery-server:
+        condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/statsdb
+      - SERVER_PORT=9090
+    networks:
+      - ewm-network
 
-  stats-db:
-    image: postgres:16.1
-    container_name: stats-db
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: stats
-      POSTGRES_PASSWORD: 12345
-      POSTGRES_DB: stats
-    healthcheck:
-      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
-      timeout: 5s
-      interval: 5s
-      retries: 10
-
-  ewm-service:
-    container_name: main-service
-    build:
-      context: ./main-service
-    ports:
-      - "8080:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-    depends_on:
-      - stats-server
-      - ewm-db
-
-  ewm-db:
-    image: postgres:16.1
-    container_name: ewm-db
-    ports:
-      - "5433:5432"
-    environment:
-      POSTGRES_USER: ewm
-      POSTGRES_PASSWORD: 12345
-      POSTGRES_DB: ewm
-    healthcheck:
-      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
-      timeout: 5s
-      interval: 5s
-      retries: 10
+networks:
+  ewm-network:
+    driver: bridge

@@ -1,0 +1,21 @@
+server:
+  port: 8084
+
+spring:
+  datasource:
+    url: jdbc:postgresql://request-db:5432/requestdb
+    username: request
+    password: requestpass
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+
+logging:
+  level:
+    ru.practicum: INFO

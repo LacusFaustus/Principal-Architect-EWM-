@@ -9,6 +9,6 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 public class GatewayServerApplication {
     public static void main(String[] args) {
         SpringApplication.run(GatewayServerApplication.class, args);
-        System.out.println("GATEWAY-SERVER RUNNING");
+        System.out.println("GATEWAY-SERVER RUNNING on port: 8080");
     }
 }
