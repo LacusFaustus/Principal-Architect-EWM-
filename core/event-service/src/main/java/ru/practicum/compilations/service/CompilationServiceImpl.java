@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.client.RequestFeignClient;
 import ru.practicum.client.StatFeignClient;
 import ru.practicum.client.UserFeignClient;
 import ru.practicum.compilations.dto.CompilationDto;
@@ -40,6 +41,7 @@ public class CompilationServiceImpl implements CompilationService {
     private final EventMapper eventMapper;
     private final StatFeignClient statFeignClient;
     private final UserFeignClient userFeignClient;
+    private final RequestFeignClient requestFeignClient;
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 

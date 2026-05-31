@@ -1,7 +1,6 @@
 package ru.practicum.category.controller;
 
 import lombok.AllArgsConstructor;
-import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -10,6 +9,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.category.service.CategoryService;
 import ru.practicum.category.dto.CategoryDto;
+import ru.practicum.handler.exception.BadRequestException;
 import ru.practicum.handler.exception.NotFoundException;
 
 import java.util.List;
@@ -24,27 +24,26 @@ public class PublicCategoryController {
     @GetMapping
     public ResponseEntity<List<CategoryDto>> getCategories(
             @RequestParam(name = "from", defaultValue = "0") Integer from,
-            @RequestParam(name = "size", defaultValue = "10") Integer size) throws BadRequestException {
+            @RequestParam(name = "size", defaultValue = "10") Integer size) {
+
+        if (from < 0 || size <= 0) {
+            throw new BadRequestException("Invalid pagination parameters");
+        }
 
         Pageable pageable = PageRequest.of(from / size, size, Sort.by("id").descending());
 
-        try {
-            return ResponseEntity.ok()
-                    .body(categoryService.getCategories(pageable).getContent());
-        } catch (RuntimeException ex) {
-            throw new BadRequestException();
-        }
+        return ResponseEntity.ok()
+                .body(categoryService.getCategories(pageable).getContent());
     }
 
     @GetMapping("/{catId}")
-    public ResponseEntity<CategoryDto> getCategory(
-            @PathVariable("catId") Long catId) throws NotFoundException {
+    public ResponseEntity<CategoryDto> getCategory(@PathVariable("catId") Long catId) {
+        CategoryDto category = categoryService.getCategory(catId);
 
-        try {
-            return ResponseEntity.ok()
-                    .body(categoryService.getCategory(catId));
-        } catch (RuntimeException ex) {
-            throw new NotFoundException(ex.getMessage());
+        if (category == null) {
+            throw new NotFoundException("Category with id=" + catId + " was not found");
         }
+
+        return ResponseEntity.ok().body(category);
     }
 }

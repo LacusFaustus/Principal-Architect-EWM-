@@ -21,13 +21,6 @@ public interface EventMapper {
     @Mapping(target = "state", constant = "PENDING")
     @Mapping(target = "location", source = "newEventDto.location")
     @Mapping(target = "publishedOn", ignore = true)
-    @Mapping(target = "description", source = "newEventDto.description")
-    @Mapping(target = "annotation", source = "newEventDto.annotation")
-    @Mapping(target = "eventDate", source = "newEventDto.eventDate")
-    @Mapping(target = "paid", source = "newEventDto.paid")
-    @Mapping(target = "participantLimit", source = "newEventDto.participantLimit")
-    @Mapping(target = "requestModeration", source = "newEventDto.requestModeration")
-    @Mapping(target = "title", source = "newEventDto.title")
     Event toEvent(NewEventDto newEventDto, Category category, Long userId);
 
     @Mapping(target = "location", source = "event.location")
