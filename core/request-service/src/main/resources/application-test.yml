@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:requestdb;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  kafka:
+    bootstrap-servers: localhost:9092
+  cloud:
+    config:
+          enabled: false
+
+eureka:
+  client:
+    enabled: false
+
+
+grpc:
+  client:
+    collector:
+      address: "localhost:9091"
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+      negotiationType: plaintext
+
+logging:
+  level:
+    ru.practicum: DEBUG

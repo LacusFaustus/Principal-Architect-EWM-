@@ -26,7 +26,7 @@ public interface EventMapper {
     @Mapping(target = "location", source = "event.location")
     @Mapping(target = "initiator", source = "initiator")
     @Mapping(target = "confirmedRequests", source = "confirmedRequests")
-    @Mapping(target = "views", source = "views")
+    @Mapping(target = "rating", source = "rating")
     @Mapping(target = "id", source = "event.id")
     @Mapping(target = "annotation", source = "event.annotation")
     @Mapping(target = "category", source = "event.category")
@@ -39,18 +39,18 @@ public interface EventMapper {
     @Mapping(target = "requestModeration", source = "event.requestModeration")
     @Mapping(target = "state", source = "event.state")
     @Mapping(target = "title", source = "event.title")
-    EventFullDto toEventFullDto(Event event, UserShortInfoDto initiator, Long views, Long confirmedRequests);
+    EventFullDto toEventFullDto(Event event, UserShortInfoDto initiator, Double rating, Long confirmedRequests);
 
     @Mapping(target = "category", source = "event.category")
     @Mapping(target = "initiator", source = "initiator")
     @Mapping(target = "confirmedRequests", source = "confirmedRequests")
-    @Mapping(target = "views", source = "views")
+    @Mapping(target = "rating", source = "rating")
     @Mapping(target = "id", source = "event.id")
     @Mapping(target = "annotation", source = "event.annotation")
     @Mapping(target = "eventDate", source = "event.eventDate")
     @Mapping(target = "paid", source = "event.paid")
     @Mapping(target = "title", source = "event.title")
-    EventShortDto toEventShortDto(Event event, UserShortInfoDto initiator, Long views, Long confirmedRequests);
+    EventShortDto toEventShortDto(Event event, UserShortInfoDto initiator, Double rating, Long confirmedRequests);
 
     default LocationEntity map(Location location) {
         if (location == null) return null;

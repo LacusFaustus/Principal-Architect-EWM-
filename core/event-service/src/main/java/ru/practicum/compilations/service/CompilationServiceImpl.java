@@ -148,12 +148,14 @@ public class CompilationServiceImpl implements CompilationService {
         List<EventShortDto> eventShortDtos = events.stream()
                 .map(event -> {
                     Long views = viewsMap.getOrDefault(event.getId(), 0L);
+                    // Используем views как rating для совместимости (в рекомендательной системе будет отдельный запрос)
+                    Double rating = views != null ? views.doubleValue() : 0.0;
                     Long confirmedRequests = confirmedRequestsMap.getOrDefault(event.getId(), 0L);
                     UserShortInfoDto initiator = initiatorsMap.get(event.getInitiatorId());
                     if (initiator == null) {
                         initiator = new UserShortInfoDto(event.getInitiatorId(), "Unknown User");
                     }
-                    return eventMapper.toEventShortDto(event, initiator, views, confirmedRequests);
+                    return eventMapper.toEventShortDto(event, initiator, rating, confirmedRequests);
                 })
                 .collect(Collectors.toList());
 

@@ -1,7 +1,5 @@
-version: '3.8'
-
 services:
-  # Discovery Server
+  # === INFRASTRUCTURE ===
   discovery-server:
     build: ./infra/discovery-server
     container_name: discovery-server
@@ -17,7 +15,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Config Server
   config-server:
     build: ./infra/config-server
     container_name: config-server
@@ -32,7 +29,6 @@ services:
     networks:
       - ewm-network
 
-  # Gateway Server
   gateway-server:
     build: ./infra/gateway-server
     container_name: gateway-server
@@ -47,9 +43,75 @@ services:
     networks:
       - ewm-network
 
-  # User Database
+  # === KAFKA STACK ===
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - ewm-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    networks:
+      - ewm-network
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.4.0
+    container_name: schema-registry
+    ports:
+      - "8081:8081"
+    depends_on:
+      - kafka
+      - zookeeper
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    networks:
+      - ewm-network
+
+  kafka-setup:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka-setup
+    depends_on:
+      - kafka
+      - schema-registry
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      echo 'Waiting for Kafka to be ready...'
+      sleep 15
+      echo 'Creating topics...'
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic stats.user-actions.v1 --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic stats.events-similarity.v1 --partitions 3 --replication-factor 1
+      echo 'Topics created successfully'
+      echo 'Schema Registry ready at http://schema-registry:8081'
+      "
+    networks:
+      - ewm-network
+
+  # === DATABASES ===
   user-db:
-    image: postgres:16.1
+    image: postgres:15-alpine
     container_name: user-db
     ports:
       - "5433:5432"
@@ -65,28 +127,8 @@ services:
     networks:
       - ewm-network
 
-  # User Service
-  user-service:
-    build: ./core/user-service
-    container_name: user-service
-    ports:
-      - "8081:8081"
-    depends_on:
-      user-db:
-        condition: service_healthy
-      discovery-server:
-        condition: service_healthy
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/userdb
-      - SERVER_PORT=8081
-    networks:
-      - ewm-network
-
-  # Event Database
   event-db:
-    image: postgres:16.1
+    image: postgres:15-alpine
     container_name: event-db
     ports:
       - "5432:5432"
@@ -102,30 +144,8 @@ services:
     networks:
       - ewm-network
 
-  # Event Service
-  event-service:
-    build: ./core/event-service
-    container_name: event-service
-    ports:
-      - "8083:8083"
-    depends_on:
-      event-db:
-        condition: service_healthy
-      discovery-server:
-        condition: service_healthy
-      user-service:
-        condition: service_started
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://event-db:5432/eventdb
-      - SERVER_PORT=8083
-    networks:
-      - ewm-network
-
-  # Request Database
   request-db:
-    image: postgres:16.1
+    image: postgres:15-alpine
     container_name: request-db
     ports:
       - "5435:5432"
@@ -141,32 +161,25 @@ services:
     networks:
       - ewm-network
 
-  # Request Service
-  request-service:
-    build: ./core/request-service
-    container_name: request-service
+  comment-db:
+    image: postgres:15-alpine
+    container_name: comment-db
     ports:
-      - "8084:8084"
-    depends_on:
-      request-db:
-        condition: service_healthy
-      discovery-server:
-        condition: service_healthy
-      user-service:
-        condition: service_started
-      event-service:
-        condition: service_started
+      - "5436:5432"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://request-db:5432/requestdb
-      - SERVER_PORT=8084
+      POSTGRES_USER: comment
+      POSTGRES_PASSWORD: commentpass
+      POSTGRES_DB: commentdb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U comment -d commentdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     networks:
       - ewm-network
 
-  # Stats Database
   stats-db:
-    image: postgres:16.1
+    image: postgres:15-alpine
     container_name: stats-db
     ports:
       - "5434:5432"
@@ -182,12 +195,76 @@ services:
     networks:
       - ewm-network
 
-  # Stats Service
+  # === CORE SERVICES ===
+  user-service:
+    build: ./core/user-service
+    container_name: user-service
+    depends_on:
+      user-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/userdb
+    networks:
+      - ewm-network
+
+  event-service:
+    build: ./core/event-service
+    container_name: event-service
+    depends_on:
+      event-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://event-db:5432/eventdb
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    networks:
+      - ewm-network
+
+  request-service:
+    build: ./core/request-service
+    container_name: request-service
+    depends_on:
+      request-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://request-db:5432/requestdb
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    networks:
+      - ewm-network
+
+  comment-service:
+    build: ./core/comment-service
+    container_name: comment-service
+    depends_on:
+      comment-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://comment-db:5432/commentdb
+    networks:
+      - ewm-network
+
   stats-server:
     build: ./stats-service/stat-svc-service
     container_name: stats-server
-    ports:
-      - "9090:9090"
     depends_on:
       stats-db:
         condition: service_healthy
@@ -197,7 +274,64 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/statsdb
-      - SERVER_PORT=9090
+    networks:
+      - ewm-network
+
+  # === RECOMMENDATION SERVICES ===
+  recommendation-collector:
+    build: ./stats-service/recommendation-collector
+    container_name: recommendation-collector
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      schema-registry:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL=http://schema-registry:8081
+    networks:
+      - ewm-network
+
+  recommendation-aggregator:
+    build: ./stats-service/recommendation-aggregator
+    container_name: recommendation-aggregator
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      schema-registry:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL=http://schema-registry:8081
+    networks:
+      - ewm-network
+
+  recommendation-analyzer:
+    build: ./stats-service/recommendation-analyzer
+    container_name: recommendation-analyzer
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      schema-registry:
+        condition: service_started
+      stats-db:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL=http://schema-registry:8081
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/statsdb
     networks:
       - ewm-network
 

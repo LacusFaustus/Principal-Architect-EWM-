@@ -52,16 +52,19 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
         </dependency>
-        <!-- Добавляем зависимость на common-dto -->
         <dependency>
             <groupId>ru.practicum</groupId>
             <artifactId>common-dto</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!-- Добавляем зависимость на feign-clients -->
         <dependency>
             <groupId>ru.practicum</groupId>
             <artifactId>feign-clients</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ru.practicum</groupId>
+            <artifactId>recommendation-schema</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -89,6 +92,19 @@
         <dependency>
             <groupId>org.springframework.retry</groupId>
             <artifactId>spring-retry</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.devh</groupId>
+            <artifactId>grpc-client-spring-boot-starter</artifactId>
+            <version>3.1.0.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
         </dependency>
     </dependencies>
 

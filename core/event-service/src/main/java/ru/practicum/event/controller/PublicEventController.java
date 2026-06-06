@@ -34,6 +34,7 @@ public class PublicEventController {
             @RequestParam(required = false) String sort,
             @RequestParam(defaultValue = "0") Integer from,
             @RequestParam(defaultValue = "10") Integer size,
+            @RequestHeader(value = "X-EWM-USER-ID", required = false) Long userId,
             HttpServletRequest request) {
 
         if (rangeStart != null && rangeEnd != null && rangeEnd.isBefore(rangeStart)) {
@@ -43,9 +44,7 @@ public class PublicEventController {
         PublicEventParams params = new PublicEventParams(text, categories, paid, rangeStart,
                 rangeEnd, onlyAvailable, sort, new PageParams(from, size));
 
-        List<EventShortDto> events = eventService.getEventsByPublicFilters(params, request);
-
-        eventService.saveStats(request);
+        List<EventShortDto> events = eventService.getEventsByPublicFilters(params, userId);
 
         return ResponseEntity.ok()
                 .body(events);
@@ -53,13 +52,30 @@ public class PublicEventController {
 
     @GetMapping("/{id}")
     public ResponseEntity<EventFullDto> getEventById(@PathVariable Long id,
+                                                     @RequestHeader(value = "X-EWM-USER-ID", required = false) Long userId,
                                                      HttpServletRequest request) {
-        log.info("Public GET event by ID: {}", id);
-        EventFullDto event = eventService.getEventById(id, request);
-
-        eventService.saveStats(request);
+        log.info("Public GET event by ID: {}, userId: {}", id, userId);
+        EventFullDto event = eventService.getEventById(id, userId, request);
 
         return ResponseEntity.ok()
                 .body(event);
+    }
+
+    @GetMapping("/recommendations")
+    public ResponseEntity<List<EventShortDto>> getRecommendations(
+            @RequestHeader("X-EWM-USER-ID") long userId,
+            @RequestParam(defaultValue = "10") int size) {
+        log.info("Getting recommendations for user: {}, size: {}", userId, size);
+        List<EventShortDto> recommendations = eventService.getRecommendationsForUser(userId, size);
+        return ResponseEntity.ok(recommendations);
+    }
+
+    @PutMapping("/{eventId}/like")
+    public ResponseEntity<Void> likeEvent(
+            @PathVariable Long eventId,
+            @RequestHeader("X-EWM-USER-ID") long userId) {
+        log.info("User {} likes event {}", userId, eventId);
+        eventService.likeEvent(userId, eventId);
+        return ResponseEntity.ok().build();
     }
 }

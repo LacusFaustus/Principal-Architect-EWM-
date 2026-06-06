@@ -13,7 +13,6 @@ spring:
           enabled: true
           lower-case-service-id: true
       routes:
-        # User Service routes
         - id: user-service
           uri: lb://user-service
           predicates:
@@ -23,8 +22,6 @@ spring:
               args:
                 name: userServiceCB
                 fallbackUri: forward:/fallback/users
-
-        # Event Service routes
         - id: event-service
           uri: lb://event-service
           predicates:
@@ -34,8 +31,6 @@ spring:
               args:
                 name: eventServiceCB
                 fallbackUri: forward:/fallback/events
-
-        # Request Service routes
         - id: request-service
           uri: lb://request-service
           predicates:
@@ -45,8 +40,6 @@ spring:
               args:
                 name: requestServiceCB
                 fallbackUri: forward:/fallback/requests
-
-        # Comment Service routes
         - id: comment-service
           uri: lb://comment-service
           predicates:
@@ -56,8 +49,6 @@ spring:
               args:
                 name: commentServiceCB
                 fallbackUri: forward:/fallback/comments
-
-        # Stats Service routes
         - id: stats-server
           uri: lb://stats-server
           predicates:

@@ -15,8 +15,12 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>stat-svc-dto</module>
         <module>stat-svc-client</module>
         <module>stat-svc-service</module>
-        <module>stat-svc-dto</module>
+        <module>recommendation-schema</module>
+        <module>recommendation-collector</module>
+        <module>recommendation-aggregator</module>
+        <module>recommendation-analyzer</module>
     </modules>
 </project>
