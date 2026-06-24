@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$USER_HOME$/src/main/java" charset="UTF-8" />
+    <file url="file://$USER_HOME$/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/core/auth-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/core/comment-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/core/common-dto/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/core/common-eventsourcing/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/core/common-infra/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/core/event-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/core/feign-clients/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/core/main-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/core/request-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/core/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/core/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/core/user-dto/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/core/user-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/event-context/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/infra/config-server/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/infra/discovery-server/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/infra/gateway-server/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/infra/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/infra/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/main-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/performance-tests/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/performance-tests/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/stats-service/recommendation-aggregator/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/stats-service/recommendation-analyzer/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/stats-service/recommendation-collector/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/stats-service/recommendation-schema/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/stats-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/stats-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/stats-service/stat-svc-client/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/stats-service/stat-svc-dto/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/stats-service/stat-svc-service/src/main/java" charset="UTF-8" />
+  </component>
+</project>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+      </profile>
+      <profile name="Annotation profile for recommendation-analyzer" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.34/lombok-1.18.34.jar" />
+        </processorPath>
+        <module name="recommendation-analyzer" />
+      </profile>
+      <profile name="Annotation profile for Explore With Me Plus" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.34/lombok-1.18.34.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.6.3/mapstruct-processor-1.6.3.jar" />
+        </processorPath>
+        <module name="feign-clients" />
+        <module name="stat-svc-client" />
+        <module name="recommendation-collector" />
+        <module name="user-service" />
+        <module name="common-eventsourcing" />
+        <module name="user-dto" />
+        <module name="config-server" />
+        <module name="auth-service" />
+        <module name="comment-service" />
+        <module name="discovery-server" />
+        <module name="stat-svc-dto" />
+        <module name="common-infra" />
+        <module name="stat-svc-service" />
+        <module name="common-dto" />
+        <module name="event-service" />
+        <module name="request-service" />
+        <module name="recommendation-aggregator" />
+        <module name="recommendation-schema" />
+        <module name="gateway-server" />
+      </profile>
+      <profile name="Annotation profile for event-context" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.34/lombok-1.18.34.jar" />
+        </processorPath>
+        <module name="event-context" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="main-service" target="21" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="auth-service" options="-parameters" />
+      <module name="comment-service" options="-parameters" />
+      <module name="common-dto" options="-parameters" />
+      <module name="common-eventsourcing" options="-parameters" />
+      <module name="common-infra" options="-parameters" />
+      <module name="config-server" options="-parameters" />
+      <module name="core" options="" />
+      <module name="discovery-server" options="-parameters" />
+      <module name="event-context" options="-parameters" />
+      <module name="event-service" options="-parameters" />
+      <module name="feign-clients" options="-parameters" />
+      <module name="gateway-server" options="-parameters" />
+      <module name="infra" options="" />
+      <module name="main-service" options="-parameters" />
+      <module name="recommendation-aggregator" options="-parameters" />
+      <module name="recommendation-analyzer" options="-parameters" />
+      <module name="recommendation-collector" options="-parameters" />
+      <module name="recommendation-schema" options="-parameters" />
+      <module name="request-service" options="-parameters" />
+      <module name="stat-svc-client" options="-parameters" />
+      <module name="stat-svc-dto" options="-parameters" />
+      <module name="stat-svc-service" options="-parameters" />
+      <module name="user-dto" options="-parameters" />
+      <module name="user-service" options="-parameters" />
+    </option>
+  </component>
+</project>

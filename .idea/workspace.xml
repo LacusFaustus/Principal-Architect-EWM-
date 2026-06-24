@@ -1,0 +1,454 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="0a6f7e91-b965-4787-87d6-fbae8b269114" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.env.production" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.github/workflows/deploy.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.github/workflows/performance-test.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/argocd/application.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/argocd/progressive-delivery.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backstage/catalog-info.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build-complete.ps1" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/chaos-mesh/experiment.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/chaos-mesh/schedule.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/pom.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/AuthServiceApplication.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/client/UserServiceClient.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/controller/AuthController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/controller/InternalAuthController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/dto/LoginRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/dto/LoginResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/dto/RefreshTokenRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/dto/UserCredentialsDto.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/dto/UserProfileDto.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/model/RefreshToken.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/model/Role.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/model/UserCredentials.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/repository/RefreshTokenRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/repository/UserCredentialsRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/security/JwtAuthenticationFilter.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/security/JwtTokenProvider.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/security/SecurityConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/security/UserDetailsServiceImpl.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/service/AuthService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/service/TokenService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/resources/application-docker.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/resources/application.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/resources/bootstrap.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/resources/db/changelog/changes/v1.0.0/create-tables.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/resources/db/changelog/db.changelog-master.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/auth-service/src/main/resources/db/changelog/db.changelog-master.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/comment-service/src/main/java/ru/practicum/client/CommentFeignClient.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/comment-service/src/main/java/ru/practicum/client/CommentFeignClientFallback.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/comment-service/src/main/resources/bootstrap.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-dto/src/main/java/ru/practicum/dto/CommentDto.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-dto/src/main/java/ru/practicum/events/EventCreatedEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-dto/src/main/java/ru/practicum/events/EventPublishedEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-dto/src/main/java/ru/practicum/events/EventUpdatedEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-dto/src/main/java/ru/practicum/featureflags/FeatureFlagService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-dto/src/main/java/ru/practicum/tenant/TenantAwareDataSource.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-dto/src/main/java/ru/practicum/tenant/TenantConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-dto/src/main/java/ru/practicum/tenant/TenantContext.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-dto/src/main/java/ru/practicum/tenant/TenantInterceptor.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-eventsourcing/pom.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-eventsourcing/src/main/java/ru/practicum/eventsourcing/EventAggregateRoot.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-eventsourcing/src/main/java/ru/practicum/eventsourcing/EventStore.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-eventsourcing/src/main/java/ru/practicum/eventsourcing/EventStoreException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-eventsourcing/src/main/java/ru/practicum/saga/SagaOrchestrator.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-eventsourcing/src/main/java/ru/practicum/saga/event/SagaEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-eventsourcing/src/main/java/ru/practicum/saga/event/SagaEventType.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-eventsourcing/src/main/java/ru/practicum/saga/event/SagaStepEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-eventsourcing/src/main/java/ru/practicum/saga/exception/SagaExecutionException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-eventsourcing/src/main/java/ru/practicum/saga/exception/SagaRollbackException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-infra/pom.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-infra/src/main/java/ru/practicum/eventsourcing/EventAggregateRoot.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-infra/src/main/java/ru/practicum/eventsourcing/EventStore.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-infra/src/main/java/ru/practicum/eventsourcing/EventStoreException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-infra/src/main/java/ru/practicum/featureflags/FeatureFlagService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-infra/src/main/java/ru/practicum/tenant/TenantAwareDataSource.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-infra/src/main/java/ru/practicum/tenant/TenantConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-infra/src/main/java/ru/practicum/tenant/TenantContext.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/common-infra/src/main/java/ru/practicum/tenant/TenantInterceptor.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/config/CacheConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/events/CancelEventCommand.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/events/CreateEventCommand.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/events/EventAggregate.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/events/EventCanceledEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/events/EventCreatedEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/events/EventPublishedEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/events/EventUpdatedEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/events/PublishEventCommand.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/events/UpdateEventCommand.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/eventsourcing/EventSourcingService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/service/EventEventPublisher.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/service/EventServiceOptimized.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/resources/db/changelog/changes/v1.0.2/add-performance-indexes.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/main/resources/graphql/schema.graphqls" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/event-service/src/test/java/ru/practicum/event/service/EventServiceOptimizedTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/feign-clients/src/main/java/ru/practicum/client/CommentFeignClient.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/feign-clients/src/main/java/ru/practicum/client/CommentFeignClientFallback.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/request-service/src/main/resources/db/changelog/changes/v1.0.1/add-request-indexes.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/user-service/src/main/java/ru/practicum/config/RestTemplateConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/user-service/src/main/java/ru/practicum/user/service/AuthServiceClient.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/user-service/src/main/java/ru/practicum/user/service/UserServiceSagaImpl.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/user-service/src/main/resources/db/changelog/db.changelog-master.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/user-service/src/main/resources/db/changelog/v1.0.0/create-users-table.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/user-service/src/main/resources/db/changelog/v1.0.1/add-user-indexes.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/user-service/src/test/java/ru/practicum/user/service/UserServiceTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dbt/models/event_analytics.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dbt/models/schema.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docker-compose.prod.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/event-context/pom.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/event-context/src/main/java/ru/practicum/eventcontext/domain/DomainException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/event-context/src/main/java/ru/practicum/eventcontext/domain/Event.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/event-context/src/main/java/ru/practicum/eventcontext/domain/EventStatus.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/event-context/src/main/java/ru/practicum/eventcontext/events/EventCanceledEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/event-context/src/main/java/ru/practicum/eventcontext/events/EventCreatedEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/event-context/src/main/java/ru/practicum/eventcontext/events/EventPublishedEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/event-context/src/main/resources/application.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/generate-sources.ps1" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helm/ewm/Chart.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helm/ewm/templates/deployment.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helm/ewm/templates/secrets.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helm/ewm/values.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/infra/gateway-server/src/main/java/ru/practicum/gateway/config/GatewayConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/infra/gateway-server/src/main/java/ru/practicum/gateway/config/UserKeyResolver.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/infra/gateway-server/src/main/java/ru/practicum/gateway/security/JwtAuthenticationFilter.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/infra/gateway-server/src/test/java/ru/practicum/gateway/security/JwtAuthenticationFilterTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/init-scripts/01-create-databases.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/init-scripts/02-create-test-data.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/istio/virtual-service.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/kubernetes/cost-optimization.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/monitoring/grafana/dashboards/business-intelligence.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/monitoring/kiali.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/monitoring/prometheus.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/performance-tests/jmeter/ewm-load-test.jmx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/performance-tests/jmeter/users.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/performance-tests/pom.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/postman/Explore With Me Plus.postman_collection.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/postman/Explore With Me Plus.postman_environment.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/postman/test-data.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/backup.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/create-test-data.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/health-check.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/parse-jmeter-results.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/prod-deploy.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/smoke-tests.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/self-healing/auto-remediation.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/spotbugs-exclude.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/start-all-services.ps1" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/stats-service/recommendation-aggregator/src/main/resources/bootstrap.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/stats-service/recommendation-analyzer/src/main/java/ru/practicum/analyzer/listener/EventEventListener.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/stats-service/recommendation-analyzer/src/main/java/ru/practicum/analyzer/service/RecommendationService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/stats-service/recommendation-analyzer/src/main/resources/bootstrap.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/stats-service/recommendation-collector/src/main/resources/bootstrap.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/terraform/aws/global/main.tf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/terraform/aws/region/main.tf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/terraform/aws/secretsmanager/main.tf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/checkstyle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/checkstyle.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/comment-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/comment-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/comment-service/src/main/resources/application-docker.yml" beforeDir="false" afterPath="$PROJECT_DIR$/core/comment-service/src/main/resources/application-docker.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/comment-service/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/core/comment-service/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/common-dto/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/common-dto/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/event-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/event-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/category/service/CategoryServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/category/service/CategoryServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/mapper/EventMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/mapper/EventMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/service/EventServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/service/EventServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/handler/ApiError.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/handler/ApiError.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/location/dto/Location.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/location/dto/Location.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/location/model/LocationEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/location/model/LocationEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/event-service/src/main/resources/application-docker.yml" beforeDir="false" afterPath="$PROJECT_DIR$/core/event-service/src/main/resources/application-docker.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/event-service/src/main/resources/bootstrap.yml" beforeDir="false" afterPath="$PROJECT_DIR$/core/event-service/src/main/resources/bootstrap.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/feign-clients/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/feign-clients/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/feign-clients/src/main/java/ru/practicum/client/StatFeignClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/feign-clients/src/main/java/ru/practicum/client/StatFeignClient.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/request-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/request-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/request-service/src/main/resources/application-docker.yml" beforeDir="false" afterPath="$PROJECT_DIR$/core/request-service/src/main/resources/application-docker.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/request-service/src/main/resources/bootstrap.yml" beforeDir="false" afterPath="$PROJECT_DIR$/core/request-service/src/main/resources/bootstrap.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/user-dto/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-dto/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/user-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/user-service/src/main/java/ru/practicum/user/service/UserServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-service/src/main/java/ru/practicum/user/service/UserServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/user-service/src/main/resources/application-docker.yml" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-service/src/main/resources/application-docker.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/user-service/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-service/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/user-service/src/main/resources/bootstrap.yml" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-service/src/main/resources/bootstrap.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/infra/config-server/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/infra/config-server/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/infra/config-server/src/main/resources/application-docker.yml" beforeDir="false" afterPath="$PROJECT_DIR$/infra/config-server/src/main/resources/application-docker.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/infra/discovery-server/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/infra/discovery-server/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/infra/discovery-server/src/main/resources/application-docker.yml" beforeDir="false" afterPath="$PROJECT_DIR$/infra/discovery-server/src/main/resources/application-docker.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/infra/gateway-server/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/infra/gateway-server/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/infra/gateway-server/src/main/resources/application-docker.yml" beforeDir="false" afterPath="$PROJECT_DIR$/infra/gateway-server/src/main/resources/application-docker.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/infra/gateway-server/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/infra/gateway-server/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/infra/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/infra/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/recommendation-aggregator/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/recommendation-aggregator/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/recommendation-aggregator/src/main/java/ru/practicum/aggregator/service/AggregatorService.java" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/recommendation-aggregator/src/main/java/ru/practicum/aggregator/service/AggregatorService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/recommendation-aggregator/src/main/resources/application-docker.yml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/recommendation-aggregator/src/main/resources/application-docker.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/recommendation-analyzer/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/recommendation-analyzer/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/recommendation-analyzer/src/main/resources/application-docker.yml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/recommendation-analyzer/src/main/resources/application-docker.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/recommendation-collector/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/recommendation-collector/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/recommendation-collector/src/main/java/ru/practicum/collector/grpc/UserActionControllerImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/recommendation-collector/src/main/java/ru/practicum/collector/grpc/UserActionControllerImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/recommendation-collector/src/main/resources/application-docker.yml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/recommendation-collector/src/main/resources/application-docker.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/recommendation-schema/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/recommendation-schema/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/stat-svc-client/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/stat-svc-client/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/stat-svc-dto/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/stat-svc-dto/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/stat-svc-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/stat-svc-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/stat-svc-service/src/main/resources/application-docker.yml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/stat-svc-service/src/main/resources/application-docker.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/suppressions.xml" beforeDir="false" afterPath="$PROJECT_DIR$/suppressions.xml" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="com.intellij.jpb.JpaEntity" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="recommendations" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="3DoFhDV6RoeyHezQvuI0aFkElsT" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Maven.explore-with-me [clean].executor": "Run",
+    "Maven.explore-with-me [compile].executor": "Run",
+    "Maven.explore-with-me [package].executor": "Run",
+    "Maven.explore-with-me [test].executor": "Run",
+    "Maven.explore-with-me [validate].executor": "Run",
+    "Maven.explore-with-me-plus [clean].executor": "Run",
+    "Maven.explore-with-me-plus [compile].executor": "Run",
+    "Maven.explore-with-me-plus [deploy].executor": "Run",
+    "Maven.explore-with-me-plus [install].executor": "Run",
+    "Maven.explore-with-me-plus [package].executor": "Run",
+    "Maven.explore-with-me-plus [site].executor": "Run",
+    "Maven.explore-with-me-plus [test].executor": "Run",
+    "Maven.explore-with-me-plus [validate].executor": "Run",
+    "Maven.explore-with-me-plus [verify].executor": "Run",
+    "Notification.DisplayName-DoNotAsk-DatabaseConfigFileWatcher.found": "New/updated database configurations found",
+    "Notification.DoNotAsk-DatabaseConfigFileWatcher.found": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "Principal-Architect",
+    "kotlin-language-version-configured": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
+    "run.code.analysis.last.selected.profile": "pProject Default",
+    "run.configurations.included.in.services": "true",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\projects\java-explore-with-me-plus\core\auth-service\src\main" />
+      <recent name="C:\projects\java-explore-with-me-plus\core" />
+    </key>
+  </component>
+  <component name="RunDashboard">
+    <option name="configurationTypes">
+      <set>
+        <option value="KtorApplicationConfigurationType" />
+        <option value="MicronautRunConfigurationType" />
+        <option value="QuarkusRunConfigurationType" />
+        <option value="SpringBootApplicationConfigurationType" />
+      </set>
+    </option>
+  </component>
+  <component name="RunManager" selected="Spring Boot.MainServiceApplication">
+    <configuration name="AggregatorServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="recommendation-aggregator" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="ru.practicum.aggregator.AggregatorServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="AnalyzerServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="recommendation-analyzer" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="ru.practicum.analyzer.AnalyzerServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="AuthServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="auth-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="ru.practicum.auth.AuthServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="CollectorServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="recommendation-collector" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="ru.practicum.collector.CollectorServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="CommentServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="comment-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="ru.practicum.CommentServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="ConfigServerApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="config-server" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="ru.practicum.config.ConfigServerApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="DiscoveryServerApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="discovery-server" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="ru.practicum.discovery.DiscoveryServerApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="EventServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="event-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="ru.practicum.EventServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="GatewayServerApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="gateway-server" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="ru.practicum.gateway.GatewayServerApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="MainServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="main-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="ru.practicum.MainServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="RequestServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="request-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="ru.practicum.RequestServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="StatServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="stat-svc-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="ru.practicum.statservice.StatServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="UserServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="user-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="ru.practicum.UserServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.28238.7" />
+        <option value="bundled-js-predefined-d6986cc7102b-a71380e98a7c-JavaScript-IU-252.28238.7" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="0a6f7e91-b965-4787-87d6-fbae8b269114" name="Changes" comment="" />
+      <created>1778940633471</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1778940633471</updated>
+      <workItem from="1778940634955" duration="9342000" />
+      <workItem from="1779207274408" duration="38000" />
+      <workItem from="1779207319682" duration="886000" />
+      <workItem from="1779208216058" duration="10200000" />
+      <workItem from="1779485923161" duration="11954000" />
+      <workItem from="1779760136655" duration="2126000" />
+      <workItem from="1779762279496" duration="3465000" />
+      <workItem from="1779765756777" duration="640000" />
+      <workItem from="1779916312893" duration="11427000" />
+      <workItem from="1779995090936" duration="20588000" />
+      <workItem from="1780215566685" duration="18903000" />
+      <workItem from="1780325640542" duration="25689000" />
+      <workItem from="1780495555371" duration="15000" />
+      <workItem from="1780495578606" duration="7098000" />
+      <workItem from="1780513036293" duration="16093000" />
+      <workItem from="1780608320740" duration="83000" />
+      <workItem from="1780608416379" duration="1771000" />
+      <workItem from="1780614267368" duration="2723000" />
+      <workItem from="1780731266557" duration="18000" />
+      <workItem from="1780731291128" duration="11646000" />
+      <workItem from="1781068925908" duration="7000" />
+      <workItem from="1781122314446" duration="3000" />
+      <workItem from="1781127440237" duration="10000" />
+      <workItem from="1781127631091" duration="8000" />
+      <workItem from="1781715371737" duration="166000" />
+      <workItem from="1781715546470" duration="27374000" />
+      <workItem from="1781848890420" duration="8441000" />
+      <workItem from="1781901517316" duration="4804000" />
+      <workItem from="1782030776066" duration="10636000" />
+      <workItem from="1782041701001" duration="6430000" />
+      <workItem from="1782069422990" duration="21235000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="UnknownFeatures">
+    <option featureType="dependencySupport" implementationName="java:org.springframework.security:spring-security-core" />
+    <option featureType="dependencySupport" implementationName="java:org.springframework:spring-core" />
+    <option featureType="dependencySupport" implementationName="java:jakarta.validation:jakarta.validation-api" />
+    <option featureType="dependencySupport" implementationName="java:org.springframework.boot:spring-boot-starter-graphql" />
+    <option featureType="dependencySupport" implementationName="java:io.projectreactor:reactor-core" />
+    <option featureType="dependencySupport" implementationName="java:org.springframework.data:spring-data-commons" />
+    <option featureType="dependencySupport" implementationName="executable:kubectl" />
+    <option featureType="dependencySupport" implementationName="java:org.springframework.cloud:spring-cloud-context" />
+    <option featureType="dependencySupport" implementationName="java:org.hibernate.validator:hibernate-validator" />
+    <option featureType="dependencySupport" implementationName="java:org.springframework:spring-webmvc" />
+    <option featureType="dependencySupport" implementationName="java:org.projectlombok:lombok" />
+    <option featureType="dependencySupport" implementationName="executable:docker" />
+    <option featureType="dependencySupport" implementationName="java:jakarta.persistence:jakarta.persistence-api" />
+    <option featureType="dependencySupport" implementationName="java:io.grpc:grpc-api" />
+    <option featureType="dependencySupport" implementationName="java:jakarta.ws.rs:jakarta.ws.rs-api" />
+    <option featureType="dependencySupport" implementationName="java:org.springframework:spring-messaging" />
+    <option featureType="dependencySupport" implementationName="java:org.springframework.boot:spring-boot" />
+  </component>
+</project>
