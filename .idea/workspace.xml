@@ -4,7 +4,22 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0a6f7e91-b965-4787-87d6-fbae8b269114" name="Changes" comment="" />
+    <list default="true" id="0a6f7e91-b965-4787-87d6-fbae8b269114" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/auth-service/target/auth-service-1.0.0.jar.original" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/comment-service/target/comment-service-1.0.0.jar.original" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/event-service/target/event-service-1.0.0.jar.original" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/request-service/target/request-service-1.0.0.jar.original" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/user-service/target/user-service-1.0.0.jar.original" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/infra/config-server/target/config-server-1.0.0.jar.original" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/infra/discovery-server/target/discovery-server-1.0.0.jar.original" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/infra/gateway-server/target/gateway-server-1.0.0.jar.original" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/recommendation-aggregator/target/recommendation-aggregator-1.0.0.jar.original" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/recommendation-analyzer/target/recommendation-analyzer-1.0.0.jar.original" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/recommendation-collector/target/recommendation-collector-1.0.0.jar.original" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/stat-svc-service/target/stat-svc-service-1.0.0.jar.original" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -58,7 +73,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "Principal-Architect",
+    "git-widget-placeholder": "Principal-Architect-EWM-",
     "kotlin-language-version-configured": "true",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -227,7 +242,7 @@
       <workItem from="1781901517316" duration="4804000" />
       <workItem from="1782030776066" duration="10636000" />
       <workItem from="1782041701001" duration="6430000" />
-      <workItem from="1782069422990" duration="21568000" />
+      <workItem from="1782069422990" duration="22501000" />
     </task>
     <servers />
   </component>
