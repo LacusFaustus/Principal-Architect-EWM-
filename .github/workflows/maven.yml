@@ -2,9 +2,9 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ "main", "microservices", "spring-cloud", "recommendations" ]
+    branches: [ "main", "Principal-Architect-EWM-", "develop", "microservices", "spring-cloud", "recommendations" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "Principal-Architect-EWM-" ]
 
 jobs:
   build:

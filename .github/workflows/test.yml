@@ -1,0 +1,15 @@
+name: Test Workflow
+
+on:
+  push:
+    branches: [ "Principal-Architect-EWM-", "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: echo "Workflow is running on branch ${{ github.ref_name }}"

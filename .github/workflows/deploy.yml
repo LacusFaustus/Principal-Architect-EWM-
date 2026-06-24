@@ -5,9 +5,11 @@ on:
     branches:
       - main
       - develop
+      - Principal-Architect-EWM-
   pull_request:
     branches:
       - main
+      - Principal-Architect-EWM-
 
 env:
   REGISTRY: ghcr.io
