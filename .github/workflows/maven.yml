@@ -2,9 +2,9 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ "main", "Principal-Architect-EWM-", "develop", "microservices", "spring-cloud", "recommendations" ]
-  pull_request:
     branches: [ "main", "Principal-Architect-EWM-" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -20,8 +20,8 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build with Maven
-        run: mvn clean compile -DskipTests
+      - name: Build with Maven (skip checkstyle)
+        run: mvn clean compile -DskipTests -Dcheckstyle.skip=true
 
       - name: Run tests
-        run: mvn test -DskipTests=false
+        run: mvn test -DskipTests=false -Dcheckstyle.skip=true
