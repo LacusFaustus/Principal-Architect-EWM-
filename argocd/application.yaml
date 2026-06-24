@@ -1,0 +1,70 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ewm-platform
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/manifest-generate-paths: .
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: ewm-alerts
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: ewm-alerts
+spec:
+  project: production
+  source:
+    repoURL: https://github.com/practicum/ewm-gitops
+    targetRevision: main
+    path: overlays/production
+    plugin:
+      name: helm
+      env:
+        - name: HELM_VALUES
+          value: |
+            images:
+              tag: $ARGOCD_APP_REVISION
+            autoscaling:
+              enabled: true
+            istio:
+              enabled: true
+            monitoring:
+              enabled: true
+            logging:
+              enabled: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - Validate=true
+      - PrunePropagationPolicy=foreground
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: production
+  namespace: argocd
+spec:
+  description: Production projects for EWM platform
+  sourceRepos:
+    - https://github.com/practicum/ewm-gitops
+  destinations:
+    - namespace: production
+      server: https://kubernetes.default.svc
+    - namespace: monitoring
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  orphanedResources:
+    warn: true

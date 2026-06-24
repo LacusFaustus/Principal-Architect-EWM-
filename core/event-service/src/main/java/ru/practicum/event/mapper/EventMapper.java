@@ -54,11 +54,17 @@ public interface EventMapper {
 
     default LocationEntity map(Location location) {
         if (location == null) return null;
-        return new LocationEntity(location.getLat(), location.getLon());
+        LocationEntity entity = new LocationEntity();
+        entity.setLat(location.getLat());
+        entity.setLon(location.getLon());
+        return entity;
     }
 
-    default Location map(LocationEntity location) {
-        if (location == null) return null;
-        return new Location(location.getLat(), location.getLon());
+    default Location map(LocationEntity locationEntity) {
+        if (locationEntity == null) return null;
+        Location location = new Location();
+        location.setLat(locationEntity.getLat());
+        location.setLon(locationEntity.getLon());
+        return location;
     }
 }

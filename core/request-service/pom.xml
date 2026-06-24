@@ -7,11 +7,12 @@
     <parent>
         <groupId>ru.practicum</groupId>
         <artifactId>core</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>1.0.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>request-service</artifactId>
+    <version>1.0.0</version>
 
     <dependencies>
         <dependency>
@@ -63,11 +64,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>ru.practicum</groupId>
-            <artifactId>recommendation-schema</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
@@ -79,6 +75,7 @@
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct-processor</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -102,9 +99,15 @@
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
         </dependency>
+        <!-- Добавляем версию для protobuf-java-util -->
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java-util</artifactId>
+            <version>${protobuf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ru.practicum</groupId>
+            <artifactId>recommendation-schema</artifactId>
         </dependency>
     </dependencies>
 

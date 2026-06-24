@@ -1,0 +1,15 @@
+package ru.practicum.saga.event;
+
+public enum SagaEventType {
+    STARTED,
+    STEP_STARTED,
+    STEP_COMPLETED,
+    STEP_FAILED,
+    COMPENSATION_STARTED,
+    COMPENSATION_COMPLETED,
+    COMPENSATION_FAILED,
+    COMPLETED,
+    ROLLBACK_STARTED,
+    ROLLBACK_COMPLETED,
+    ROLLBACK_FAILED
+}

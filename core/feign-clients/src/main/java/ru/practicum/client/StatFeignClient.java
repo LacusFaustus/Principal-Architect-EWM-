@@ -10,7 +10,7 @@ import ru.practicum.dto.ViewStatsDto;
 
 import java.util.List;
 
-@FeignClient(name = "stats-server", fallback = StatFeignClientFallback.class)
+@FeignClient(name = "stats-server", url = "${stats-server.url:http://localhost:9090}")
 public interface StatFeignClient {
 
     @PostMapping("/hit")

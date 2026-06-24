@@ -1,0 +1,79 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-event-indexes
+      author: practicum
+      changes:
+        - createIndex:
+            tableName: events
+            indexName: idx_events_initiator_id
+            columns:
+              - column:
+                  name: initiator_id
+        - createIndex:
+            tableName: events
+            indexName: idx_events_state
+            columns:
+              - column:
+                  name: state
+        - createIndex:
+            tableName: events
+            indexName: idx_events_category_id
+            columns:
+              - column:
+                  name: category_id
+        - createIndex:
+            tableName: events
+            indexName: idx_events_event_date
+            columns:
+              - column:
+                  name: event_date
+        - createIndex:
+            tableName: events
+            indexName: idx_events_created_on
+            columns:
+              - column:
+                  name: created_on
+        - createIndex:
+            tableName: events
+            indexName: idx_events_published_on
+            columns:
+              - column:
+                  name: published_on
+
+  - changeSet:
+      id: add-composite-indexes
+      author: practicum
+      changes:
+        - createIndex:
+            tableName: events
+            indexName: idx_events_state_category
+            columns:
+              - column:
+                  name: state
+              - column:
+                  name: category_id
+        - createIndex:
+            tableName: events
+            indexName: idx_events_initiator_state
+            columns:
+              - column:
+                  name: initiator_id
+              - column:
+                  name: state
+        - createIndex:
+            tableName: events
+            indexName: idx_events_event_date_state
+            columns:
+              - column:
+                  name: event_date
+              - column:
+                  name: state
+
+  - changeSet:
+      id: add-fulltext-indexes
+      author: practicum
+      changes:
+        - sql:
+            comment: "Add GIN index for full-text search on annotation and description"
+            sql: |
+              CREATE INDEX idx_events_annotation_gin ON events USING gin(to_tsvector('russian', annotation || ' ' || description));

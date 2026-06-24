@@ -1,0 +1,1326 @@
+# docker-compose.prod.yml
+# Production-grade Docker Compose configuration for Explore With Me Plus
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+
+version: '3.8'
+
+services:
+  # ============================================
+  # INFRASTRUCTURE SERVICES
+  # ============================================
+
+  discovery-server:
+    image: ${REGISTRY:-practicum}/discovery-server:${TAG:-latest}
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_SERVER_ENABLE_SELF_PRESERVATION=true
+      - EUREKA_SERVER_RENEWAL_PERCENT_THRESHOLD=0.85
+      - EUREKA_SERVER_EVICTION_INTERVAL_TIMER_IN_MS=60000
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  config-server:
+    image: ${REGISTRY:-practicum}/config-server:${TAG:-latest}
+    container_name: config-server
+    ports:
+      - "8082:8082"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=${CONFIG_REPO_URI}
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_USERNAME=${CONFIG_REPO_USERNAME}
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD=${CONFIG_REPO_PASSWORD}
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL=${CONFIG_REPO_BRANCH:-main}
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  gateway-server:
+    image: ${REGISTRY:-practicum}/gateway-server:${TAG:-latest}
+    container_name: gateway-server
+    ports:
+      - "80:8080"
+      - "443:8443"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_GATEWAY_HTTPCLIENT_CONNECT_TIMEOUT=5000
+      - SPRING_CLOUD_GATEWAY_HTTPCLIENT_RESPONSE_TIMEOUT=30000
+      - SPRING_CLOUD_GATEWAY_HTTPCLIENT_POOL_MAX_CONNECTIONS=1000
+      - SPRING_CLOUD_GATEWAY_HTTPCLIENT_POOL_ACQUIRE_TIMEOUT=5000
+      - SPRING_CLOUD_GATEWAY_HTTPCLIENT_POOL_MAX_IDLE_TIME=300000
+      - SERVER_SSL_KEY_STORE=${SSL_KEYSTORE_PATH}
+      - SERVER_SSL_KEY_STORE_PASSWORD=${SSL_KEYSTORE_PASSWORD}
+      - SERVER_SSL_KEY_ALIAS=${SSL_KEY_ALIAS}
+    volumes:
+      - ./ssl:/etc/ssl/private:ro
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+        replicas: 2
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ============================================
+  # CACHE LAYER
+  # ============================================
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --appendfsync everysec --requirepass ${REDIS_PASSWORD} --maxmemory 2gb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ============================================
+  # MESSAGE QUEUE
+  # ============================================
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_MAX_CLIENT_CNXNS: 60
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181", "|", "grep", "imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_LOG_CLEANUP_POLICY: delete
+      KAFKA_COMPRESSION_TYPE: snappy
+      KAFKA_NUM_PARTITIONS: 6
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.0
+    container_name: schema-registry
+    ports:
+      - "8081:8081"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      zookeeper:
+        condition: service_healthy
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_AVRO_COMPATIBILITY_LEVEL: backward
+      SCHEMA_REGISTRY_CACHE_CAPACITY: 1000
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  kafka-setup:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: kafka-setup
+    depends_on:
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      echo 'Waiting for Kafka to be ready...'
+      sleep 15
+      
+      echo 'Creating topics...'
+      
+      # User actions topic
+      kafka-topics --bootstrap-server kafka:9092 \
+        --create --if-not-exists \
+        --topic stats.user-actions.v1 \
+        --partitions 6 \
+        --replication-factor 1 \
+        --config retention.ms=604800000 \
+        --config cleanup.policy=delete
+      
+      # Events similarity topic
+      kafka-topics --bootstrap-server kafka:9092 \
+        --create --if-not-exists \
+        --topic stats.events-similarity.v1 \
+        --partitions 6 \
+        --replication-factor 1 \
+        --config retention.ms=604800000 \
+        --config cleanup.policy=delete
+      
+      # Event created topic
+      kafka-topics --bootstrap-server kafka:9092 \
+        --create --if-not-exists \
+        --topic events.created.v1 \
+        --partitions 3 \
+        --replication-factor 1 \
+        --config retention.ms=2592000000 \
+        --config cleanup.policy=delete
+      
+      # Event published topic
+      kafka-topics --bootstrap-server kafka:9092 \
+        --create --if-not-exists \
+        --topic events.published.v1 \
+        --partitions 3 \
+        --replication-factor 1 \
+        --config retention.ms=2592000000 \
+        --config cleanup.policy=delete
+      
+      # Event updated topic
+      kafka-topics --bootstrap-server kafka:9092 \
+        --create --if-not-exists \
+        --topic events.updated.v1 \
+        --partitions 3 \
+        --replication-factor 1 \
+        --config retention.ms=2592000000 \
+        --config cleanup.policy=delete
+      
+      echo 'Topics created successfully'
+      
+      echo 'Creating Avro schemas...'
+      curl -X POST -H 'Content-Type: application/vnd.schemaregistry.v1+json' \
+        --data '{"schema": "{\"type\":\"record\",\"name\":\"UserActionAvro\",\"namespace\":\"ru.practicum.ewm.stats.avro\",\"fields\":[{\"name\":\"userId\",\"type\":\"long\"},{\"name\":\"eventId\",\"type\":\"long\"},{\"name\":\"actionType\",\"type\":{\"type\":\"enum\",\"name\":\"ActionTypeAvro\",\"symbols\":[\"VIEW\",\"REGISTER\",\"LIKE\"]}},{\"name\":\"timestamp\",\"type\":\"long\"}]}"}' \
+        http://schema-registry:8081/subjects/stats.user-actions.v1-value/versions
+      
+      echo 'Setup completed successfully'
+      "
+    networks:
+      - ewm-network
+    deploy:
+      restart_policy:
+        condition: none
+
+  # ============================================
+  # DATABASES
+  # ============================================
+
+  user-db:
+    image: postgres:15-alpine
+    container_name: user-db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER_USER:-user}
+      POSTGRES_PASSWORD: ${DB_USER_PASS:-userpass}
+      POSTGRES_DB: userdb
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale-provider=icu --icu-locale=en"
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER_USER:-user} -d userdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  event-db:
+    image: postgres:15-alpine
+    container_name: event-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_EVENT_USER:-event}
+      POSTGRES_PASSWORD: ${DB_EVENT_PASS:-eventpass}
+      POSTGRES_DB: eventdb
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale-provider=icu --icu-locale=en"
+    volumes:
+      - event-db-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_EVENT_USER:-event} -d eventdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  request-db:
+    image: postgres:15-alpine
+    container_name: request-db
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: ${DB_REQUEST_USER:-request}
+      POSTGRES_PASSWORD: ${DB_REQUEST_PASS:-requestpass}
+      POSTGRES_DB: requestdb
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale-provider=icu --icu-locale=en"
+    volumes:
+      - request-db-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_REQUEST_USER:-request} -d requestdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  comment-db:
+    image: postgres:15-alpine
+    container_name: comment-db
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_USER: ${DB_COMMENT_USER:-comment}
+      POSTGRES_PASSWORD: ${DB_COMMENT_PASS:-commentpass}
+      POSTGRES_DB: commentdb
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale-provider=icu --icu-locale=en"
+    volumes:
+      - comment-db-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_COMMENT_USER:-comment} -d commentdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  stats-db:
+    image: postgres:15-alpine
+    container_name: stats-db
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: ${DB_STATS_USER:-stats}
+      POSTGRES_PASSWORD: ${DB_STATS_PASS:-statspass}
+      POSTGRES_DB: statsdb
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale-provider=icu --icu-locale=en"
+    volumes:
+      - stats-db-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_STATS_USER:-stats} -d statsdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ============================================
+  # CORE SERVICES
+  # ============================================
+
+  user-service:
+    image: ${REGISTRY:-practicum}/user-service:${TAG:-latest}
+    container_name: user-service
+    depends_on:
+      user-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/userdb
+      - SPRING_DATASOURCE_USERNAME=${DB_USER_USER:-user}
+      - SPRING_DATASOURCE_PASSWORD=${DB_USER_PASS:-userpass}
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SPRING_REDIS_TIMEOUT=2000ms
+      - SPRING_REDIS_LETTUCE_POOL_MAX_ACTIVE=20
+      - SPRING_REDIS_LETTUCE_POOL_MAX_IDLE=10
+      - SPRING_REDIS_LETTUCE_POOL_MIN_IDLE=5
+      - SPRING_CACHE_TYPE=redis
+      - SPRING_CACHE_REDIS_TIME_TO_LIVE=600000
+      - SPRING_CACHE_REDIS_CACHE_NULL_VALUES=false
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8082
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+      - MANAGEMENT_METRICS_TAGS_APPLICATION=user-service
+      - LOGGING_LEVEL_RU_PRACTICUM=INFO
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+        replicas: 2
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  auth-service:
+    image: ${REGISTRY:-practicum}/auth-service:${TAG:-latest}
+    container_name: auth-service
+    depends_on:
+      user-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/userdb
+      - SPRING_DATASOURCE_USERNAME=${DB_USER_USER:-user}
+      - SPRING_DATASOURCE_PASSWORD=${DB_USER_PASS:-userpass}
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-86400000}
+      - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION:-604800000}
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8082
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+      - MANAGEMENT_METRICS_TAGS_APPLICATION=auth-service
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+        replicas: 2
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  event-service:
+    image: ${REGISTRY:-practicum}/event-service:${TAG:-latest}
+    container_name: event-service
+    depends_on:
+      event-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://event-db:5432/eventdb
+      - SPRING_DATASOURCE_USERNAME=${DB_EVENT_USER:-event}
+      - SPRING_DATASOURCE_PASSWORD=${DB_EVENT_PASS:-eventpass}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=20
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=5
+      - SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT=600000
+      - SPRING_DATASOURCE_HIKARI_MAX_LIFETIME=1800000
+      - SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT=30000
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+      - SPRING_JPA_HIBERNATE_JDBC_BATCH_SIZE=50
+      - SPRING_JPA_HIBERNATE_ORDER_INSERTS=true
+      - SPRING_JPA_HIBERNATE_ORDER_UPDATES=true
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SPRING_REDIS_TIMEOUT=2000ms
+      - SPRING_REDIS_LETTUCE_POOL_MAX_ACTIVE=20
+      - SPRING_REDIS_LETTUCE_POOL_MAX_IDLE=10
+      - SPRING_REDIS_LETTUCE_POOL_MIN_IDLE=5
+      - SPRING_CACHE_TYPE=redis
+      - SPRING_CACHE_REDIS_TIME_TO_LIVE=600000
+      - SPRING_CACHE_REDIS_CACHE_NULL_VALUES=false
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_PRODUCER_KEY_SERIALIZER=org.apache.kafka.common.serialization.StringSerializer
+      - SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER=org.springframework.kafka.support.serializer.JsonSerializer
+      - SPRING_KAFKA_PRODUCER_PROPERTIES_SCHEMA_REGISTRY_URL=http://schema-registry:8081
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8082
+      - GRPC_CLIENT_COLLECTOR_ADDRESS=discovery:///recommendation-collector
+      - GRPC_CLIENT_ANALYZER_ADDRESS=discovery:///recommendation-analyzer
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+      - MANAGEMENT_METRICS_TAGS_APPLICATION=event-service
+      - LOGGING_LEVEL_RU_PRACTICUM=INFO
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+        replicas: 2
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  request-service:
+    image: ${REGISTRY:-practicum}/request-service:${TAG:-latest}
+    container_name: request-service
+    depends_on:
+      request-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://request-db:5432/requestdb
+      - SPRING_DATASOURCE_USERNAME=${DB_REQUEST_USER:-request}
+      - SPRING_DATASOURCE_PASSWORD=${DB_REQUEST_PASS:-requestpass}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=20
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=5
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SPRING_CACHE_TYPE=redis
+      - SPRING_CACHE_REDIS_TIME_TO_LIVE=600000
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8082
+      - GRPC_CLIENT_COLLECTOR_ADDRESS=discovery:///recommendation-collector
+      - RESILIENCE4J_CIRCUITBREAKER_INSTANCES_EVENTSERVICE_SLIDING_WINDOW_SIZE=10
+      - RESILIENCE4J_CIRCUITBREAKER_INSTANCES_EVENTSERVICE_FAILURE_RATE_THRESHOLD=50
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+      - MANAGEMENT_METRICS_TAGS_APPLICATION=request-service
+      - LOGGING_LEVEL_RU_PRACTICUM=INFO
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+        replicas: 2
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  comment-service:
+    image: ${REGISTRY:-practicum}/comment-service:${TAG:-latest}
+    container_name: comment-service
+    depends_on:
+      comment-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://comment-db:5432/commentdb
+      - SPRING_DATASOURCE_USERNAME=${DB_COMMENT_USER:-comment}
+      - SPRING_DATASOURCE_PASSWORD=${DB_COMMENT_PASS:-commentpass}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=20
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=5
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SPRING_CACHE_TYPE=redis
+      - SPRING_CACHE_REDIS_TIME_TO_LIVE=600000
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8082
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+      - MANAGEMENT_METRICS_TAGS_APPLICATION=comment-service
+      - LOGGING_LEVEL_RU_PRACTICUM=INFO
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+        replicas: 2
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  stats-server:
+    image: ${REGISTRY:-practicum}/stats-server:${TAG:-latest}
+    container_name: stats-server
+    depends_on:
+      stats-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/statsdb
+      - SPRING_DATASOURCE_USERNAME=${DB_STATS_USER:-stats}
+      - SPRING_DATASOURCE_PASSWORD=${DB_STATS_PASS:-statspass}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=30
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=10
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8082
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+      - MANAGEMENT_METRICS_TAGS_APPLICATION=stats-server
+      - LOGGING_LEVEL_RU_PRACTICUM=INFO
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+        replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ============================================
+  # RECOMMENDATION SERVICES
+  # ============================================
+
+  recommendation-collector:
+    image: ${REGISTRY:-practicum}/recommendation-collector:${TAG:-latest}
+    container_name: recommendation-collector
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_PRODUCER_KEY_SERIALIZER=org.apache.kafka.common.serialization.StringSerializer
+      - SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER=org.springframework.kafka.support.serializer.JsonSerializer
+      - KAFKA_TOPICS_USER_ACTIONS=stats.user-actions.v1
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8082
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+      - MANAGEMENT_METRICS_TAGS_APPLICATION=recommendation-collector
+      - LOGGING_LEVEL_RU_PRACTICUM=INFO
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+        replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  recommendation-aggregator:
+    image: ${REGISTRY:-practicum}/recommendation-aggregator:${TAG:-latest}
+    container_name: recommendation-aggregator
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_CONSUMER_KEY_DESERIALIZER=org.apache.kafka.common.serialization.StringDeserializer
+      - SPRING_KAFKA_CONSUMER_VALUE_DESERIALIZER=org.springframework.kafka.support.serializer.JsonDeserializer
+      - SPRING_KAFKA_CONSUMER_PROPERTIES_SPRING_JSON_TRUSTED_PACKAGES=*
+      - SPRING_KAFKA_CONSUMER_PROPERTIES_SPRING_JSON_TYPE_MAPPING=userAction:ru.practicum.ewm.stats.avro.UserActionAvro
+      - SPRING_KAFKA_PRODUCER_KEY_SERIALIZER=org.apache.kafka.common.serialization.StringSerializer
+      - SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER=org.springframework.kafka.support.serializer.JsonSerializer
+      - KAFKA_TOPICS_USER_ACTIONS=stats.user-actions.v1
+      - KAFKA_TOPICS_EVENTS_SIMILARITY=stats.events-similarity.v1
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8082
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+      - MANAGEMENT_METRICS_TAGS_APPLICATION=recommendation-aggregator
+      - LOGGING_LEVEL_RU_PRACTICUM=INFO
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+        replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8087/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  recommendation-analyzer:
+    image: ${REGISTRY:-practicum}/recommendation-analyzer:${TAG:-latest}
+    container_name: recommendation-analyzer
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      stats-db:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/statsdb
+      - SPRING_DATASOURCE_USERNAME=${DB_STATS_USER:-stats}
+      - SPRING_DATASOURCE_PASSWORD=${DB_STATS_PASS:-statspass}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=20
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=5
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_CONSUMER_KEY_DESERIALIZER=org.apache.kafka.common.serialization.StringDeserializer
+      - SPRING_KAFKA_CONSUMER_VALUE_DESERIALIZER=org.springframework.kafka.support.serializer.JsonDeserializer
+      - SPRING_KAFKA_CONSUMER_PROPERTIES_SPRING_JSON_TRUSTED_PACKAGES=*
+      - SPRING_KAFKA_CONSUMER_PROPERTIES_SPRING_JSON_TYPE_MAPPING=userAction:ru.practicum.ewm.stats.avro.UserActionAvro,eventSimilarity:ru.practicum.ewm.stats.avro.EventSimilarityAvro
+      - KAFKA_TOPICS_USER_ACTIONS=stats.user-actions.v1
+      - KAFKA_TOPICS_EVENTS_SIMILARITY=stats.events-similarity.v1
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8082
+      - GRPC_SERVER_PORT=0
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+      - MANAGEMENT_METRICS_TAGS_APPLICATION=recommendation-analyzer
+      - LOGGING_LEVEL_RU_PRACTICUM=INFO
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+        replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ============================================
+  # MONITORING
+  # ============================================
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_AUTH_BASIC_ENABLED=true
+      - GF_SERVER_ROOT_URL=http://grafana:3000
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ============================================
+  # LOGGING
+  # ============================================
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+      - xpack.monitoring.enabled=true
+      - cluster.name=ewm-cluster
+      - node.name=ewm-node
+      - network.host=0.0.0.0
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.0
+    container_name: logstash
+    ports:
+      - "5000:5000"
+      - "5044:5044"
+    volumes:
+      - ./monitoring/logstash/pipeline:/usr/share/logstash/pipeline:ro
+    environment:
+      - LS_JAVA_OPTS=-Xmx512m -Xms512m
+      - XPACK_MONITORING_ENABLED=false
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      - XPACK_REPORTING_ENABLED=false
+      - XPACK_MONITORING_ENABLED=false
+      - SERVER_PUBLICBASEURL=http://kibana:5601
+      - SERVER_BASEPATH=/kibana
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - ewm-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5601/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# ============================================
+# NETWORKS
+# ============================================
+
+networks:
+  ewm-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# ============================================
+# VOLUMES
+# ============================================
+
+volumes:
+  redis-data:
+    driver: local
+  zookeeper-data:
+    driver: local
+  kafka-data:
+    driver: local
+  user-db-data:
+    driver: local
+  event-db-data:
+    driver: local
+  request-db-data:
+    driver: local
+  comment-db-data:
+    driver: local
+  stats-db-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  elasticsearch-data:
+    driver: local

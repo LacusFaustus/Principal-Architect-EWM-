@@ -1,0 +1,54 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'discovery-server'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['discovery-server:8761']
+
+  - job_name: 'gateway-server'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['gateway-server:8080']
+
+  - job_name: 'user-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['user-service:8081']
+
+  - job_name: 'event-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['event-service:8083']
+
+  - job_name: 'request-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['request-service:8084']
+
+  - job_name: 'comment-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['comment-service:8085']
+
+  - job_name: 'stats-server'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['stats-server:9090']
+
+  - job_name: 'recommendation-collector'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['recommendation-collector:8086']
+
+  - job_name: 'recommendation-aggregator'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['recommendation-aggregator:8087']
+
+  - job_name: 'recommendation-analyzer'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['recommendation-analyzer:8088']

@@ -2,14 +2,14 @@ package ru.practicum.handler;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 import java.util.List;
 
-@Setter
 @Getter
-@ToString
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class ApiError {
     private List<String> errors;

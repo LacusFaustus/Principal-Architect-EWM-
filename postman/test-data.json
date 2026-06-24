@@ -1,0 +1,46 @@
+{
+  "users": [
+    {
+      "email": "admin@example.com",
+      "name": "Admin User",
+      "role": "ADMIN"
+    },
+    {
+      "email": "user1@example.com",
+      "name": "Test User 1",
+      "role": "USER"
+    },
+    {
+      "email": "user2@example.com",
+      "name": "Test User 2",
+      "role": "USER"
+    }
+  ],
+  "categories": [
+    "Concert",
+    "Festival",
+    "Exhibition",
+    "Workshop",
+    "Conference"
+  ],
+  "events": [
+    {
+      "title": "Spring Music Festival",
+      "category": "Concert",
+      "description": "Annual spring music festival with international artists",
+      "location": {
+        "lat": 55.7558,
+        "lon": 37.6173
+      }
+    },
+    {
+      "title": "Tech Conference 2025",
+      "category": "Conference",
+      "description": "Annual technology conference covering latest trends",
+      "location": {
+        "lat": 55.7512,
+        "lon": 37.6184
+      }
+    }
+  ]
+}

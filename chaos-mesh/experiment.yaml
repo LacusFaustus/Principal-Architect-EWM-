@@ -1,0 +1,107 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: event-service-network-delay
+  namespace: production
+spec:
+  action: delay
+  mode: all
+  selector:
+    labelSelectors:
+      app: event-service
+  delay:
+    latency: "300ms"
+    correlation: "25"
+    jitter: "100ms"
+  duration: "5m"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: event-service-network-loss
+  namespace: production
+spec:
+  action: loss
+  mode: all
+  selector:
+    labelSelectors:
+      app: event-service
+  loss:
+    loss: "10"
+    correlation: "50"
+  duration: "2m"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: event-service-pod-kill
+  namespace: production
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    labelSelectors:
+      app: event-service
+  duration: "30s"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: event-service-pod-failure
+  namespace: production
+spec:
+  action: pod-failure
+  mode: all
+  selector:
+    labelSelectors:
+      app: event-service
+  duration: "1m"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: event-service-cpu-stress
+  namespace: production
+spec:
+  mode: all
+  selector:
+    labelSelectors:
+      app: event-service
+  stressors:
+    cpu:
+      workers: 4
+      load: 80
+  duration: "2m"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: event-service-memory-stress
+  namespace: production
+spec:
+  mode: all
+  selector:
+    labelSelectors:
+      app: event-service
+  stressors:
+    memory:
+      workers: 2
+      size: "512MB"
+  duration: "1m"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: IOChaos
+metadata:
+  name: event-service-io-delay
+  namespace: production
+spec:
+  action: latency
+  mode: all
+  selector:
+    labelSelectors:
+      app: event-service
+  volumePath: /var/lib/postgresql/data
+  path: "/var/lib/postgresql/data/*"
+  delay: "100ms"
+  percent: 50
+  duration: "3m"

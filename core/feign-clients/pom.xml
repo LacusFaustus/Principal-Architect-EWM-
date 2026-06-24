@@ -7,11 +7,12 @@
     <parent>
         <groupId>ru.practicum</groupId>
         <artifactId>core</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>1.0.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>feign-clients</artifactId>
+    <version>1.0.0</version>
 
     <dependencies>
         <dependency>
@@ -25,7 +26,13 @@
         <dependency>
             <groupId>ru.practicum</groupId>
             <artifactId>common-dto</artifactId>
-            <version>${project.version}</version>
+            <version>1.0.0</version>
+        </dependency>
+        <!-- Добавляем зависимость от stat-svc-dto -->
+        <dependency>
+            <groupId>ru.practicum</groupId>
+            <artifactId>stat-svc-dto</artifactId>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -43,16 +50,6 @@
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-spring-boot3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ru.practicum</groupId>
-            <artifactId>stat-svc-dto</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ru.practicum</groupId>
-            <artifactId>stat-svc-client</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>

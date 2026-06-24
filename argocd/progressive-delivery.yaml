@@ -1,0 +1,125 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: event-service
+  namespace: production
+  annotations:
+    rollouts.argoproj.io/traffic-routing: istio
+spec:
+  replicas: 5
+  strategy:
+    canary:
+      maxSurge: "25%"
+      maxUnavailable: 0
+      steps:
+        - setWeight: 5
+        - pause: {duration: 30s}
+        - setWeight: 10
+        - pause: {duration: 30s}
+        - setWeight: 25
+        - pause: {duration: 1m}
+        - setWeight: 50
+        - pause: {duration: 2m}
+        - setWeight: 75
+        - pause: {duration: 5m}
+        - setWeight: 100
+      analysis:
+        templates:
+          - templateName: canary-analysis
+        args:
+          - name: service-name
+            value: event-service
+          - name: namespace
+            value: production
+        interval: 15s
+        successCondition: |
+          result[0].successful > 0.95
+        failureCondition: |
+          result[0].failed > 0.05
+      trafficRouting:
+        istio:
+          virtualService:
+            name: event-service
+            routes:
+              - primary
+  selector:
+    matchLabels:
+      app: event-service
+  template:
+    metadata:
+      labels:
+        app: event-service
+        version: latest
+    spec:
+      containers:
+        - name: event-service
+          image: practicum/event-service:latest
+          ports:
+            - containerPort: 8083
+              name: http
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: kubernetes
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://discovery-server:8761/eureka/
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 5
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: canary-analysis
+  namespace: production
+spec:
+  args:
+    - name: service-name
+    - name: namespace
+  metrics:
+    - name: success-rate
+      count: 3
+      interval: 10s
+      successCondition: result[0] >= 0.95
+      failureCondition: result[0] < 0.8
+      provider:
+        prometheus:
+          address: http://prometheus:9090
+          query: |
+            sum(rate(istio_requests_total{
+              reporter="destination",
+              destination_service=~"{{args.service-name}}",
+              response_code=~"2.*"
+            }[5m])) / 
+            sum(rate(istio_requests_total{
+              reporter="destination",
+              destination_service=~"{{args.service-name}}"
+            }[5m]))
+    - name: latency
+      count: 3
+      interval: 10s
+      successCondition: result[0] <= 1
+      failureCondition: result[0] > 2
+      provider:
+        prometheus:
+          address: http://prometheus:9090
+          query: |
+            histogram_quantile(0.95, sum(rate(istio_request_duration_milliseconds_bucket{
+              reporter="destination",
+              destination_service=~"{{args.service-name}}"
+            }[5m])) by (le))

@@ -43,9 +43,26 @@ services:
     networks:
       - ewm-network
 
+  # === REDIS ===
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass redispass
+    volumes:
+      - redis-data:/data
+    networks:
+      - ewm-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   # === KAFKA STACK ===
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
+    image: confluentinc/cp-zookeeper:7.6.0
     container_name: zookeeper
     ports:
       - "2181:2181"
@@ -56,7 +73,7 @@ services:
       - ewm-network
 
   kafka:
-    image: confluentinc/cp-kafka:7.4.0
+    image: confluentinc/cp-kafka:7.6.0
     container_name: kafka
     ports:
       - "9092:9092"
@@ -65,7 +82,7 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT://localhost:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -75,7 +92,7 @@ services:
       - ewm-network
 
   schema-registry:
-    image: confluentinc/cp-schema-registry:7.4.0
+    image: confluentinc/cp-schema-registry:7.6.0
     container_name: schema-registry
     ports:
       - "8081:8081"
@@ -90,7 +107,7 @@ services:
       - ewm-network
 
   kafka-setup:
-    image: confluentinc/cp-kafka:7.4.0
+    image: confluentinc/cp-kafka:7.6.0
     container_name: kafka-setup
     depends_on:
       - kafka
@@ -104,7 +121,6 @@ services:
       kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic stats.user-actions.v1 --partitions 3 --replication-factor 1
       kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic stats.events-similarity.v1 --partitions 3 --replication-factor 1
       echo 'Topics created successfully'
-      echo 'Schema Registry ready at http://schema-registry:8081'
       "
     networks:
       - ewm-network
@@ -204,10 +220,20 @@ services:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/userdb
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=userpass
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_PASSWORD=redispass
+      # 🆕 Tracing
+      # - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411
+      # - SPRING_SLEUTH_SAMPLER_PROBABILITY=1.0
     networks:
       - ewm-network
 
@@ -221,11 +247,21 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+      redis:
+        condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://event-db:5432/eventdb
+      - SPRING_DATASOURCE_USERNAME=event
+      - SPRING_DATASOURCE_PASSWORD=eventpass
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_PASSWORD=redispass
+      # 🆕 Tracing
+      - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411
+      - SPRING_SLEUTH_SAMPLER_PROBABILITY=1.0
     networks:
       - ewm-network
 
@@ -239,11 +275,21 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+      redis:
+        condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://request-db:5432/requestdb
+      - SPRING_DATASOURCE_USERNAME=request
+      - SPRING_DATASOURCE_PASSWORD=requestpass
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_PASSWORD=redispass
+      # 🆕 Tracing
+      - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411
+      - SPRING_SLEUTH_SAMPLER_PROBABILITY=1.0
     networks:
       - ewm-network
 
@@ -255,10 +301,20 @@ services:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://comment-db:5432/commentdb
+      - SPRING_DATASOURCE_USERNAME=comment
+      - SPRING_DATASOURCE_PASSWORD=commentpass
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_PASSWORD=redispass
+      # 🆕 Tracing
+      - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411
+      - SPRING_SLEUTH_SAMPLER_PROBABILITY=1.0
     networks:
       - ewm-network
 
@@ -274,6 +330,11 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/statsdb
+      - SPRING_DATASOURCE_USERNAME=stats
+      - SPRING_DATASOURCE_PASSWORD=statspass
+      # 🆕 Tracing
+      - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411
+      - SPRING_SLEUTH_SAMPLER_PROBABILITY=1.0
     networks:
       - ewm-network
 
@@ -292,7 +353,9 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL=http://schema-registry:8081
+      # 🆕 Tracing
+      - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411
+      - SPRING_SLEUTH_SAMPLER_PROBABILITY=1.0
     networks:
       - ewm-network
 
@@ -310,7 +373,9 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL=http://schema-registry:8081
+      # 🆕 Tracing
+      - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411
+      - SPRING_SLEUTH_SAMPLER_PROBABILITY=1.0
     networks:
       - ewm-network
 
@@ -330,11 +395,31 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL=http://schema-registry:8081
       - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/statsdb
+      - SPRING_DATASOURCE_USERNAME=stats
+      - SPRING_DATASOURCE_PASSWORD=statspass
+      # 🆕 Tracing
+      - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411
+      - SPRING_SLEUTH_SAMPLER_PROBABILITY=1.0
     networks:
       - ewm-network
+
+  # ============================================
+  # 🆕 TRACING STACK (Zipkin + Elasticsearch)
+  # ============================================
+
+  # zipkin:
+  #   image: openzipkin/zipkin:3.3.0
+  #   ...
+
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+  #   ...
 
 networks:
   ewm-network:
     driver: bridge
+
+volumes:
+  redis-data:
+  elasticsearch-data:

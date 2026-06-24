@@ -1,0 +1,145 @@
+{
+  "dashboard": {
+    "title": "Business Intelligence Dashboard",
+    "uid": "business-intelligence",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Daily Active Users (DAU)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(user_logins_total[1d]))",
+            "legendFormat": "DAU"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null }
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Event Conversion Funnel",
+        "type": "barchart",
+        "targets": [
+          {
+            "expr": "sum(rate(event_views_total[1h]))",
+            "legendFormat": "Views"
+          },
+          {
+            "expr": "sum(rate(event_registrations_total[1h]))",
+            "legendFormat": "Registrations"
+          },
+          {
+            "expr": "sum(rate(event_participations_total[1h]))",
+            "legendFormat": "Participations"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Revenue per Event",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "sum(rate(event_revenue_total[1d])) / count(events_total)",
+            "legendFormat": "Avg Revenue/Event"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "User Retention Cohort",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "sum(rate(user_retention_day_7[1d])) / sum(rate(user_retention_day_0[1d]))",
+            "legendFormat": "Day 7 Retention Rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit"
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Popular Events by Category",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum(events_by_category)",
+            "legendFormat": "{{category}}"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Top 10 Influencers",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "topk(10, user_influence_score)",
+            "legendFormat": "{{user_name}}"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Conversion Rate by Event Type",
+        "type": "barchart",
+        "targets": [
+          {
+            "expr": "avg(conversion_rate_by_event_type)",
+            "legendFormat": "{{event_type}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Peak Usage Hours",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "sum(rate(request_count[1h])) by (hour)",
+            "legendFormat": "{{hour}}"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "from": "now-30d",
+      "to": "now"
+    },
+    "refresh": "1h",
+    "schemaVersion": 38
+  }
+}

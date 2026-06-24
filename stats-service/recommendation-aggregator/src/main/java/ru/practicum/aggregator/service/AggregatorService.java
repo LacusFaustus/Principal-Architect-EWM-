@@ -6,10 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import ru.practicum.ewm.stats.avro.ActionTypeAvro;
-import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
-import ru.practicum.ewm.stats.avro.UserActionAvro;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,24 +29,25 @@ public class AggregatorService {
     // eventA (min) -> eventB (max) -> S_min
     private final Map<Long, Map<Long, Double>> minWeightsSums = new ConcurrentHashMap<>();
 
-    private final KafkaTemplate<String, EventSimilarityAvro> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Value("${kafka.topics.events-similarity:stats.events-similarity.v1}")
     private String eventsSimilarityTopic;
 
     @Autowired
-    public AggregatorService(KafkaTemplate<String, EventSimilarityAvro> kafkaTemplate) {
+    public AggregatorService(KafkaTemplate<String, Object> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
     }
 
     @KafkaListener(topics = "${kafka.topics.user-actions:stats.user-actions.v1}", groupId = "aggregator-group")
-    public void processUserAction(UserActionAvro action) {
-        Long userId = action.getUserId();
-        Long eventId = action.getEventId();
-        double newWeight = getWeight(action.getActionType());
+    public void processUserAction(Map<String, Object> action) {
+        Long userId = ((Number) action.get("userId")).longValue();
+        Long eventId = ((Number) action.get("eventId")).longValue();
+        String actionTypeStr = (String) action.get("actionType");
+        double newWeight = getWeight(actionTypeStr);
 
         log.info("Processing user action: userId={}, eventId={}, actionType={}, newWeight={}",
-                userId, eventId, action.getActionType(), newWeight);
+                userId, eventId, actionTypeStr, newWeight);
 
         // Получаем старый вес пользователя для этого события
         Map<Long, Double> userEvents = userEventWeights.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
@@ -154,24 +153,24 @@ public class AggregatorService {
     }
 
     private void sendSimilarityUpdate(Long eventA, Long eventB, double similarity) {
-        EventSimilarityAvro message = EventSimilarityAvro.newBuilder()
-                .setEventA(eventA)
-                .setEventB(eventB)
-                .setScore(similarity)
-                .setTimestamp(System.currentTimeMillis())
-                .build();
+        Map<String, Object> message = new HashMap<>();
+        message.put("eventA", eventA);
+        message.put("eventB", eventB);
+        message.put("score", similarity);
+        message.put("timestamp", System.currentTimeMillis());
 
         kafkaTemplate.send(eventsSimilarityTopic, String.valueOf(eventA), message);
         log.debug("Sent similarity update to Kafka: eventA={}, eventB={}, similarity={}", eventA, eventB, similarity);
     }
 
-    private double getWeight(ActionTypeAvro actionType) {
+    private double getWeight(String actionType) {
+        if (actionType == null) return 0.0;
         switch (actionType) {
-            case VIEW:
+            case "ACTION_VIEW":
                 return WEIGHT_VIEW;
-            case REGISTER:
+            case "ACTION_REGISTER":
                 return WEIGHT_REGISTER;
-            case LIKE:
+            case "ACTION_LIKE":
                 return WEIGHT_LIKE;
             default:
                 return 0.0;

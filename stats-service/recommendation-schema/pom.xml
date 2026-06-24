@@ -7,11 +7,12 @@
     <parent>
         <groupId>ru.practicum</groupId>
         <artifactId>stats-service</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>1.0.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>recommendation-schema</artifactId>
+    <version>1.0.0</version>
 
     <properties>
         <protobuf.version>3.25.1</protobuf.version>
@@ -56,6 +57,7 @@
             </extension>
         </extensions>
         <plugins>
+            <!-- Protobuf плагин -->
             <plugin>
                 <groupId>org.xolstice.maven.plugins</groupId>
                 <artifactId>protobuf-maven-plugin</artifactId>
@@ -76,6 +78,8 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Avro плагин -->
             <plugin>
                 <groupId>org.apache.avro</groupId>
                 <artifactId>avro-maven-plugin</artifactId>
@@ -93,6 +97,8 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Build Helper плагин -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>

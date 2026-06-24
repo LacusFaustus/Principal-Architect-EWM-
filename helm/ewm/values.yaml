@@ -1,0 +1,127 @@
+# Global settings
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: standard
+  environment: production
+
+# Replica counts
+replicaCount:
+  discoveryServer: 1
+  configServer: 1
+  gatewayServer: 2
+  userService: 2
+  eventService: 2
+  requestService: 2
+  commentService: 2
+  statsServer: 1
+  recommendationCollector: 1
+  recommendationAggregator: 1
+  recommendationAnalyzer: 1
+
+# Images
+images:
+  discoveryServer:
+    repository: practicum/discovery-server
+    tag: latest
+    pullPolicy: IfNotPresent
+  gatewayServer:
+    repository: practicum/gateway-server
+    tag: latest
+    pullPolicy: IfNotPresent
+  userService:
+    repository: practicum/user-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  eventService:
+    repository: practicum/event-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  requestService:
+    repository: practicum/request-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  commentService:
+    repository: practicum/comment-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  statsServer:
+    repository: practicum/stats-server
+    tag: latest
+    pullPolicy: IfNotPresent
+
+# Service configurations
+services:
+  discoveryServer:
+    type: ClusterIP
+    port: 8761
+    targetPort: 8761
+  gatewayServer:
+    type: LoadBalancer
+    port: 80
+    targetPort: 8080
+  userService:
+    type: ClusterIP
+    port: 8081
+    targetPort: 8081
+  eventService:
+    type: ClusterIP
+    port: 8083
+    targetPort: 8083
+  requestService:
+    type: ClusterIP
+    port: 8084
+    targetPort: 8084
+  commentService:
+    type: ClusterIP
+    port: 8085
+    targetPort: 8085
+
+# Database configurations
+postgresql:
+  enabled: true
+  postgresqlUsername: ewm
+  postgresqlPassword: ""  # Будет заменено через секреты
+  postgresqlDatabase: ewm
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+
+# Redis configuration
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    password: ""  # Будет заменено через секреты
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+
+# External Secrets configuration
+externalSecrets:
+  enabled: true
+  refreshInterval: 1h
+  dbKey: "ewm/database"
+  redisKey: "ewm/redis"
+  jwtKey: "ewm/jwt"
+
+# Environment variables
+env:
+  JWT_SECRET: ""  # Будет заменено через секреты
+  JWT_EXPIRATION: 86400000
+  EUREKA_SERVER_URL: "http://discovery-server:8761/eureka/"

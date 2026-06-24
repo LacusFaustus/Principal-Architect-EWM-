@@ -1,0 +1,37 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: weekly-chaos-experiments
+  namespace: production
+spec:
+  schedule: "0 2 * * 1"  # Every Monday at 2 AM
+  historyLimit: 10
+  type: "NetworkChaos"
+  networkChaos:
+    action: delay
+    mode: all
+    selector:
+      labelSelectors:
+        app: event-service
+    delay:
+      latency: "200ms"
+      correlation: "30"
+      jitter: "50ms"
+    duration: "10m"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: daily-pod-kill
+  namespace: production
+spec:
+  schedule: "0 3 * * *"  # Every day at 3 AM
+  historyLimit: 30
+  type: "PodChaos"
+  podChaos:
+    action: pod-kill
+    mode: one
+    selector:
+      labelSelectors:
+        app: event-service
+    duration: "30s"

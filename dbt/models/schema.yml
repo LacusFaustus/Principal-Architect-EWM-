@@ -1,0 +1,77 @@
+version: 2
+
+models:
+  - name: event_analytics
+    description: "Comprehensive event analytics with user engagement metrics"
+    columns:
+      - name: event_id
+        description: "Unique identifier for the event"
+        tests:
+          - unique
+          - not_null
+      - name: title
+        description: "Event title"
+        tests:
+          - not_null
+      - name: category
+        description: "Event category"
+        tests:
+          - not_null
+      - name: initiator_id
+        description: "User ID of event creator"
+        tests:
+          - not_null
+      - name: created_at
+        description: "Event creation timestamp"
+        tests:
+          - not_null
+      - name: published_at
+        description: "Event publication timestamp"
+      - name: event_date
+        description: "Event date"
+        tests:
+          - not_null
+      - name: participant_limit
+        description: "Maximum number of participants"
+        tests:
+          - not_null
+      - name: paid
+        description: "Whether event is paid"
+        tests:
+          - not_null
+      - name: approval_time_hours
+        description: "Hours between creation and publication"
+      - name: total_requests
+        description: "Total number of participation requests"
+      - name: confirmed_participants
+        description: "Number of confirmed participants"
+      - name: rejected_requests
+        description: "Number of rejected requests"
+      - name: total_comments
+        description: "Total number of comments"
+      - name: total_likes
+        description: "Total number of likes on comments"
+      - name: net_likes
+        description: "Net likes (likes - dislikes)"
+      - name: total_views
+        description: "Total number of views"
+      - name: conversion_rate
+        description: "Conversion rate from views to participation"
+      - name: popularity_rank
+        description: "Rank by number of participants"
+      - name: views_rank
+        description: "Rank by number of views"
+      - name: conversion_rank
+        description: "Rank by conversion rate"
+      - name: popularity_tier
+        description: "Popularity tier (VIRAL, POPULAR, MODERATE, LOW)"
+      - name: initiator_name
+        description: "Name of the event creator"
+      - name: initiator_participations
+        description: "Total participations by creator"
+      - name: initiator_comments
+        description: "Total comments by creator"
+      - name: initiator_paid_events
+        description: "Number of paid events created by user"
+      - name: initiator_avg_participants
+        description: "Average participants per event created by user"

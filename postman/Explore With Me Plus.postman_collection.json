@@ -1,0 +1,1367 @@
+{
+  "info": {
+    "_postman_id": "ewm-plus-collection",
+    "name": "Explore With Me Plus API",
+    "description": "Полная коллекция для тестирования микросервисной платформы Explore With Me Plus",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "1. Authentication",
+      "description": "Аутентификация и управление токенами",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Аутентификация пользователя и получение JWT токена"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "refresh"]
+            },
+            "description": "Обновление access токена с помощью refresh токена"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "Выход из системы и инвалидация токена"
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Token",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/auth/validate?token={{access_token}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "validate"],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
+            "description": "Проверка валидности токена"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Users",
+      "description": "Управление пользователями",
+      "item": [
+        {
+          "name": "Create User (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users"]
+            },
+            "description": "Создание нового пользователя (только для администратора)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users?from=0&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Получение списка пользователей с пагинацией"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/users/1",
+              "host": ["{{base_url}}"],
+              "path": ["users", "1"]
+            },
+            "description": "Получение информации о пользователе по ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Users Batch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[1, 2, 3, 4, 5]"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/batch",
+              "host": ["{{base_url}}"],
+              "path": ["users", "batch"]
+            },
+            "description": "Получение информации о нескольких пользователях"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1"]
+            },
+            "description": "Удаление пользователя (только для администратора)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Categories",
+      "description": "Управление категориями",
+      "item": [
+        {
+          "name": "Create Category (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Concert\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/categories",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "categories"]
+            },
+            "description": "Создание новой категории (только для администратора)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/categories?from=0&size=20",
+              "host": ["{{base_url}}"],
+              "path": ["categories"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Получение списка всех категорий"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/categories/1",
+              "host": ["{{base_url}}"],
+              "path": ["categories", "1"]
+            },
+            "description": "Получение категории по ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Category (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Music Festival\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/categories/1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "categories", "1"]
+            },
+            "description": "Обновление категории (только для администратора)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Category (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/categories/1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "categories", "1"]
+            },
+            "description": "Удаление категории (только для администратора)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Events",
+      "description": "Управление событиями",
+      "item": [
+        {
+          "name": "Create Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "1"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"annotation\": \"This is a test event annotation that should be at least 20 characters long\",\n    \"category\": 1,\n    \"description\": \"This is a detailed description of the event that should be at least 20 characters long and can be up to 7000 characters\",\n    \"eventDate\": \"2025-12-31 20:00:00\",\n    \"location\": {\n        \"lat\": 55.7558,\n        \"lon\": 37.6173\n    },\n    \"paid\": false,\n    \"participantLimit\": 100,\n    \"requestModeration\": true,\n    \"title\": \"Test Event Title\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/1/events",
+              "host": ["{{base_url}}"],
+              "path": ["users", "1", "events"]
+            },
+            "description": "Создание нового события"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "1"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/1/events?from=0&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["users", "1", "events"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Получение списка событий пользователя"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Event Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "1"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/1/events/1",
+              "host": ["{{base_url}}"],
+              "path": ["users", "1", "events", "1"]
+            },
+            "description": "Получение детальной информации о событии"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Event (User)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "1"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Updated Event Title\",\n    \"stateAction\": \"SEND_TO_REVIEW\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/1/events/1",
+              "host": ["{{base_url}}"],
+              "path": ["users", "1", "events", "1"]
+            },
+            "description": "Обновление события пользователем"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Public Events",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/events?size=20&sort=DATE",
+              "host": ["{{base_url}}"],
+              "path": ["events"],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "sort",
+                  "value": "DATE"
+                }
+              ]
+            },
+            "description": "Получение публичных событий с фильтрацией"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Public Events with Filters",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/events?text=concert&categories=1&paid=false&onlyAvailable=true&sort=VIEWS&from=0&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["events"],
+              "query": [
+                {
+                  "key": "text",
+                  "value": "concert"
+                },
+                {
+                  "key": "categories",
+                  "value": "1"
+                },
+                {
+                  "key": "paid",
+                  "value": "false"
+                },
+                {
+                  "key": "onlyAvailable",
+                  "value": "true"
+                },
+                {
+                  "key": "sort",
+                  "value": "VIEWS"
+                },
+                {
+                  "key": "from",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Получение публичных событий с фильтрацией по тексту, категориям и т.д."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Event by ID (Public)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "1"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/events/1",
+              "host": ["{{base_url}}"],
+              "path": ["events", "1"]
+            },
+            "description": "Получение публичного события по ID с увеличением счетчика просмотров"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Recommendations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "1"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/events/recommendations?size=10",
+              "host": ["{{base_url}}"],
+              "path": ["events", "recommendations"],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Получение персональных рекомендаций для пользователя"
+          },
+          "response": []
+        },
+        {
+          "name": "Like Event",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "1"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/events/1/like",
+              "host": ["{{base_url}}"],
+              "path": ["events", "1", "like"]
+            },
+            "description": "Постановка лайка событию"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Admin Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/events?states=PENDING&from=0&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "events"],
+              "query": [
+                {
+                  "key": "states",
+                  "value": "PENDING"
+                },
+                {
+                  "key": "from",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Получение списка событий для модерации (только для администратора)"
+          },
+          "response": []
+        },
+        {
+          "name": "Moderate Event (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"stateAction\": \"PUBLISH_EVENT\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/events/1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "events", "1"]
+            },
+            "description": "Модерация события (публикация или отклонение)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Compilations",
+      "description": "Управление подборками событий",
+      "item": [
+        {
+          "name": "Create Compilation (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Top Events 2025\",\n    \"pinned\": true,\n    \"events\": [1, 2, 3]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/compilations",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "compilations"]
+            },
+            "description": "Создание новой подборки (только для администратора)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Compilations",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/compilations?pinned=true&from=0&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["compilations"],
+              "query": [
+                {
+                  "key": "pinned",
+                  "value": "true"
+                },
+                {
+                  "key": "from",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Получение списка подборок"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Compilation by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/compilations/1",
+              "host": ["{{base_url}}"],
+              "path": ["compilations", "1"]
+            },
+            "description": "Получение подборки по ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Compilation (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Updated Top Events\",\n    \"pinned\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/compilations/1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "compilations", "1"]
+            },
+            "description": "Обновление подборки (только для администратора)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Compilation (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/compilations/1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "compilations", "1"]
+            },
+            "description": "Удаление подборки (только для администратора)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Requests",
+      "description": "Управление заявками на участие",
+      "item": [
+        {
+          "name": "Create Participation Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "2"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/2/requests?eventId=1",
+              "host": ["{{base_url}}"],
+              "path": ["users", "2", "requests"],
+              "query": [
+                {
+                  "key": "eventId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Подача заявки на участие в событии"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "2"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/2/requests",
+              "host": ["{{base_url}}"],
+              "path": ["users", "2", "requests"]
+            },
+            "description": "Получение всех заявок пользователя"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "2"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/2/requests/1/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["users", "2", "requests", "1", "cancel"]
+            },
+            "description": "Отмена заявки на участие"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Event Requests (Initiator)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "1"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/1/events/1/requests",
+              "host": ["{{base_url}}"],
+              "path": ["users", "1", "events", "1", "requests"]
+            },
+            "description": "Получение всех заявок на событие (для инициатора)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Request Status (Initiator)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "1"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"requestIds\": [1, 2],\n    \"status\": \"CONFIRMED\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/1/events/1/requests",
+              "host": ["{{base_url}}"],
+              "path": ["users", "1", "events", "1", "requests"]
+            },
+            "description": "Подтверждение или отклонение заявок (для инициатора)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Comments",
+      "description": "Управление комментариями",
+      "item": [
+        {
+          "name": "Create Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "2"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"This is a great event! Looking forward to attending.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/2/comments/events/1",
+              "host": ["{{base_url}}"],
+              "path": ["users", "2", "comments", "events", "1"]
+            },
+            "description": "Создание комментария к событию"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Comment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "2"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"Updated comment text. This event is amazing!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/2/comments/1",
+              "host": ["{{base_url}}"],
+              "path": ["users", "2", "comments", "1"]
+            },
+            "description": "Обновление комментария"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "2"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/2/comments/1",
+              "host": ["{{base_url}}"],
+              "path": ["users", "2", "comments", "1"]
+            },
+            "description": "Удаление комментария"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Event Comments (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/comments/events/1?from=0&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["comments", "events", "1"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Получение комментариев к событию"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Comment by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/comments/1",
+              "host": ["{{base_url}}"],
+              "path": ["comments", "1"]
+            },
+            "description": "Получение комментария по ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Comments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "2"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/2/comments?from=0&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["users", "2", "comments"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Получение всех комментариев пользователя"
+          },
+          "response": []
+        },
+        {
+          "name": "Like Comment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "2"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/2/comments/1/like",
+              "host": ["{{base_url}}"],
+              "path": ["users", "2", "comments", "1", "like"]
+            },
+            "description": "Постановка лайка комментарию"
+          },
+          "response": []
+        },
+        {
+          "name": "Dislike Comment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "2"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/2/comments/1/dislike",
+              "host": ["{{base_url}}"],
+              "path": ["users", "2", "comments", "1", "dislike"]
+            },
+            "description": "Постановка дизлайка комментарию"
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Comment Reaction",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-EWM-USER-ID",
+                "value": "2"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/2/comments/1/reaction",
+              "host": ["{{base_url}}"],
+              "path": ["users", "2", "comments", "1", "reaction"]
+            },
+            "description": "Удаление реакции на комментарий"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Pending Comments (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/comments/pending?from=0&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "comments", "pending"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Получение комментариев, ожидающих модерации"
+          },
+          "response": []
+        },
+        {
+          "name": "Moderate Comment (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"PUBLISHED\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/comments/1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "comments", "1"]
+            },
+            "description": "Модерация комментария (публикация или отклонение)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8. Statistics",
+      "description": "Сбор и получение статистики",
+      "item": [
+        {
+          "name": "Save Hit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"app\": \"test-app\",\n    \"uri\": \"/test/event/1\",\n    \"ip\": \"127.0.0.1\",\n    \"timestamp\": \"2025-12-31 20:00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/hit",
+              "host": ["{{base_url}}"],
+              "path": ["hit"]
+            },
+            "description": "Сохранение информации о посещении"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Statistics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/stats?start=2025-12-01 00:00:00&end=2026-12-31 23:59:59&uris=/events/1,/events/2&unique=true",
+              "host": ["{{base_url}}"],
+              "path": ["stats"],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2025-12-01 00:00:00"
+                },
+                {
+                  "key": "end",
+                  "value": "2026-12-31 23:59:59"
+                },
+                {
+                  "key": "uris",
+                  "value": "/events/1,/events/2"
+                },
+                {
+                  "key": "unique",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Получение статистики по посещениям"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "9. Health Checks",
+      "description": "Проверка статуса сервисов",
+      "item": [
+        {
+          "name": "Gateway Health",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/actuator/health",
+              "host": ["{{base_url}}"],
+              "path": ["actuator", "health"]
+            },
+            "description": "Проверка статуса Gateway"
+          },
+          "response": []
+        },
+        {
+          "name": "Discovery Server Health",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{discovery_url}}/actuator/health",
+              "host": ["{{discovery_url}}"],
+              "path": ["actuator", "health"]
+            },
+            "description": "Проверка статуса Discovery Server"
+          },
+          "response": []
+        },
+        {
+          "name": "Eureka Registry",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{discovery_url}}/eureka/apps",
+              "host": ["{{discovery_url}}"],
+              "path": ["eureka", "apps"]
+            },
+            "description": "Получение списка всех зарегистрированных сервисов"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "10. GraphQL",
+      "description": "GraphQL запросы",
+      "item": [
+        {
+          "name": "Get Event by ID (GraphQL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query GetEvent($id: ID!) {\n  event(id: $id) {\n    id\n    title\n    annotation\n    description\n    eventDate\n    category {\n      id\n      name\n    }\n    initiator {\n      id\n      name\n    }\n    paid\n    participantLimit\n    confirmedRequests\n    rating\n    state\n  }\n}",
+                "variables": "{\n  \"id\": 1\n}"
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["graphql"]
+            },
+            "description": "Получение события через GraphQL"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Events with Filters (GraphQL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query GetEvents(\n  $text: String,\n  $categories: [ID!],\n  $paid: Boolean,\n  $from: Int,\n  $size: Int\n) {\n  events(\n    text: $text,\n    categories: $categories,\n    paid: $paid,\n    from: $from,\n    size: $size\n  ) {\n    id\n    title\n    annotation\n    eventDate\n    category {\n      id\n      name\n    }\n    initiator {\n      id\n      name\n    }\n    rating\n    confirmedRequests\n  }\n}",
+                "variables": "{\n  \"text\": \"concert\",\n  \"categories\": [1, 2],\n  \"paid\": false,\n  \"from\": 0,\n  \"size\": 10\n}"
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["graphql"]
+            },
+            "description": "Получение событий с фильтрацией через GraphQL"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "discovery_url",
+      "value": "http://localhost:8761",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [
+          "// Extract token from login response",
+          "if (pm.response.code === 200 && pm.response.json().accessToken) {",
+          "    pm.collectionVariables.set('access_token', pm.response.json().accessToken);",
+          "}",
+          "if (pm.response.code === 200 && pm.response.json().refreshToken) {",
+          "    pm.collectionVariables.set('refresh_token', pm.response.json().refreshToken);",
+          "}",
+          "",
+          "// Test response status",
+          "pm.test('Status code is 200 or 201', function () {",
+          "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+          "});",
+          "",
+          "// Test response time",
+          "pm.test('Response time is less than 1000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+          "});",
+          "",
+          "// Test for valid JSON",
+          "pm.test('Response is valid JSON', function () {",
+          "    pm.response.to.be.json;",
+          "});",
+          "",
+          "// Test error response",
+          "if (pm.response.code >= 400) {",
+          "    pm.test('Error response has message', function () {",
+          "        const jsonData = pm.response.json();",
+          "        pm.expect(jsonData).to.have.property('message');",
+          "    });",
+          "}"
+        ]
+      }
+    }
+  ]
+}

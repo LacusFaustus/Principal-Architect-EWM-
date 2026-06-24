@@ -1,0 +1,56 @@
+type Query {
+    event(id: ID!): Event
+    events(
+        text: String
+        categories: [ID!]
+        paid: Boolean
+        rangeStart: String
+        rangeEnd: String
+        onlyAvailable: Boolean
+        sort: SortType
+        from: Int
+        size: Int
+        userId: ID
+    ): [Event!]!
+}
+
+type Event {
+    id: ID!
+    title: String!
+    annotation: String!
+    description: String!
+    eventDate: String!
+    category: Category!
+    initiator: User!
+    paid: Boolean!
+    participantLimit: Int!
+    requestModeration: Boolean!
+    state: EventState!
+    confirmedRequests: Int!
+    rating: Float!
+    createdOn: String!
+    publishedOn: String
+}
+
+type Category {
+    id: ID!
+    name: String!
+}
+
+type User {
+    id: ID!
+    name: String!
+    email: String!
+}
+
+enum EventState {
+    PENDING
+    PUBLISHED
+    CANCELED
+}
+
+enum SortType {
+    VIEWS
+    DATE
+    RATING
+}

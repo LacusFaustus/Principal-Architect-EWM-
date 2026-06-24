@@ -1,0 +1,140 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: event-service-hpa
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: event-service
+  minReplicas: 2
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Pods
+      metric:
+        name: http_requests_per_second
+        target:
+          type: AverageValue
+          averageValue: "100"
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+        - type: Percent
+          value: 10
+          periodSeconds: 60
+      selectPolicy: Min
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 30
+        - type: Percent
+          value: 20
+          periodSeconds: 30
+      selectPolicy: Max
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cost-optimization-schedule
+  namespace: production
+data:
+  schedule.yaml: |
+    # Scale down during off-peak hours
+    - schedule: "0 0 * * *"  # Midnight
+      target: event-service
+      replicas: 1
+    - schedule: "0 6 * * *"  # 6 AM
+      target: event-service
+      replicas: 3
+    - schedule: "0 18 * * *" # 6 PM
+      target: event-service
+      replicas: 5
+    - schedule: "0 0 * * 6"  # Saturday midnight
+      target: event-service
+      replicas: 1
+    - schedule: "0 0 * * 0"  # Sunday midnight
+      target: event-service
+      replicas: 1
+---
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: spot-pool
+  namespace: karpenter
+spec:
+  template:
+    spec:
+      nodeClassRef:
+        name: default
+      requirements:
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot"]
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64", "arm64"]
+        - key: karpenter.k8s.aws/instance-family
+          operator: In
+          values: ["c6i", "r6i", "m6i"]
+        - key: karpenter.k8s.aws/instance-size
+          operator: In
+          values: ["large", "xlarge", "2xlarge"]
+      taints:
+        - key: spot
+          value: "true"
+          effect: NoSchedule
+  disruption:
+    consolidationPolicy: WhenUnderutilized
+    expireAfter: 720h
+  limits:
+    cpu: 1000
+    memory: 4000Gi
+---
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: on-demand-pool
+  namespace: karpenter
+spec:
+  template:
+    spec:
+      nodeClassRef:
+        name: default
+      requirements:
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["on-demand"]
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+        - key: karpenter.k8s.aws/instance-family
+          operator: In
+          values: ["c6i", "r6i"]
+        - key: karpenter.k8s.aws/instance-size
+          operator: In
+          values: ["large", "xlarge"]
+  disruption:
+    consolidationPolicy: WhenEmpty
+    expireAfter: 720h
+  limits:
+    cpu: 500
+    memory: 2000Gi

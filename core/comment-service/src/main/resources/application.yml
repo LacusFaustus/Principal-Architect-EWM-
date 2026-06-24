@@ -35,6 +35,8 @@ spring:
       mode: never
   kafka:
     bootstrap-servers: localhost:9092
+  liquibase:
+    enabled: false
 
 eureka:
   client:

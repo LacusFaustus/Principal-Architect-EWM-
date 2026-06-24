@@ -7,13 +7,14 @@
     <parent>
         <groupId>ru.practicum</groupId>
         <artifactId>core</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>1.0.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>user-service</artifactId>
 
     <dependencies>
+        <!-- Существующие зависимости -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -49,10 +50,6 @@
             <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
-        </dependency>
-        <dependency>
             <groupId>ru.practicum</groupId>
             <artifactId>user-dto</artifactId>
             <version>${project.version}</version>
@@ -64,6 +61,10 @@
         <dependency>
             <groupId>ru.practicum</groupId>
             <artifactId>common-dto</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ru.practicum</groupId>
+            <artifactId>common-eventsourcing</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

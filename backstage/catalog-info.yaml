@@ -1,0 +1,220 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: user-service
+  description: User management microservice for EWM platform
+  annotations:
+    github.com/project-slug: practicum/user-service
+    sonarqube.org/project-key: practicum_user-service
+    snyk.io/org: practicum
+    backstage.io/kubernetes-id: user-service
+    backstage.io/techdocs-ref: dir:.
+    backstage.io/managed-by: backstage
+    backstage.io/view-url: https://github.com/practicum/user-service
+    backstage.io/edit-url: https://github.com/practicum/user-service/edit/main/README.md
+  labels:
+    tier: core
+    language: java
+    framework: spring-boot
+  tags:
+    - java
+    - spring-boot
+    - microservice
+    - postgresql
+spec:
+  type: service
+  lifecycle: production
+  owner: team-platform
+  system: ewm-platform
+  dependsOn:
+    - resource:postgres-user-db
+    - resource:redis-cache
+    - resource:discovery-server
+    - resource:config-server
+  providesApis:
+    - user-api
+  consumesApis:
+    - auth-api
+  deployment:
+    replicas: 2
+    environment: production
+    kubernetes:
+      namespace: production
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: event-service
+  description: Event management microservice for EWM platform
+  annotations:
+    github.com/project-slug: practicum/event-service
+    sonarqube.org/project-key: practicum_event-service
+    backstage.io/kubernetes-id: event-service
+    backstage.io/techdocs-ref: dir:.
+  labels:
+    tier: core
+    language: java
+    framework: spring-boot
+  tags:
+    - java
+    - spring-boot
+    - microservice
+    - postgresql
+    - kafka
+spec:
+  type: service
+  lifecycle: production
+  owner: team-events
+  system: ewm-platform
+  dependsOn:
+    - resource:postgres-event-db
+    - resource:redis-cache
+    - resource:kafka-cluster
+    - resource:discovery-server
+  providesApis:
+    - event-api
+  consumesApis:
+    - user-api
+    - request-api
+    - comment-api
+  deployment:
+    replicas: 3
+    environment: production
+    kubernetes:
+      namespace: production
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: auth-service
+  description: Authentication and authorization service for EWM platform
+  annotations:
+    github.com/project-slug: practicum/auth-service
+    sonarqube.org/project-key: practicum_auth-service
+    backstage.io/kubernetes-id: auth-service
+    backstage.io/techdocs-ref: dir:.
+  labels:
+    tier: core
+    language: java
+    framework: spring-boot
+  tags:
+    - java
+    - spring-boot
+    - security
+    - jwt
+spec:
+  type: service
+  lifecycle: production
+  owner: team-security
+  system: ewm-platform
+  dependsOn:
+    - resource:postgres-user-db
+    - resource:redis-cache
+    - resource:discovery-server
+  providesApis:
+    - auth-api
+  deployment:
+    replicas: 2
+    environment: production
+    kubernetes:
+      namespace: production
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: user-api
+  description: User service REST API
+  annotations:
+    backstage.io/definition: https://github.com/practicum/user-service/blob/main/src/main/resources/openapi.yaml
+spec:
+  type: openapi
+  lifecycle: production
+  owner: team-platform
+  system: ewm-platform
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: User Service API
+      version: 1.0.0
+    paths:
+      /users/{userId}:
+        get:
+          summary: Get user by ID
+          parameters:
+            - name: userId
+              in: path
+              required: true
+              schema:
+                type: integer
+          responses:
+            '200':
+              description: User found
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      email:
+                        type: string
+      /admin/users:
+        get:
+          summary: Get all users (admin)
+          responses:
+            '200':
+              description: List of users
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: postgres-user-db
+  description: PostgreSQL database for user service
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: database
+  owner: team-platform
+  system: ewm-platform
+  dependsOn:
+    - resource:postgres-cluster
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: redis-cache
+  description: Redis cache cluster
+spec:
+  type: cache
+  owner: team-platform
+  system: ewm-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: kafka-cluster
+  description: Kafka message broker cluster
+spec:
+  type: message-queue
+  owner: team-platform
+  system: ewm-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: ewm-platform
+  description: Explore With Me Plus platform - Event management system
+spec:
+  owner: team-platform
+  lifecycle: production
+  domain: event-management
+---
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: event-management
+  description: Event management domain
+spec:
+  owner: team-platform

@@ -7,11 +7,12 @@
     <parent>
         <groupId>ru.practicum</groupId>
         <artifactId>stats-service</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>1.0.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>stat-svc-service</artifactId>
+    <version>1.0.0</version>
 
     <dependencies>
         <dependency>
@@ -62,12 +63,10 @@
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
-            <version>1.6.3</version>
         </dependency>
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct-processor</artifactId>
-            <version>1.6.3</version>
         </dependency>
         <dependency>
             <groupId>ru.practicum</groupId>

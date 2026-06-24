@@ -1,8 +1,78 @@
+server:
+  port: 8087
+
 spring:
+  application:
+    name: recommendation-aggregator
   kafka:
     bootstrap-servers: kafka:9092
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.type.mapping: "userAction:ru.practicum.ewm.stats.avro.UserActionAvro"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  zipkin:
+    base-url: http://zipkin:9411
+    sender:
+      type: web
+    service:
+      name: recommendation-aggregator
+  sleuth:
+    sampler:
+      probability: 1.0
+    trace-id128: true
+    baggage:
+      remote-fields:
+        - user-id
+        - correlation-id
+    log:
+      slf4j:
+        enabled: true
+    propagation:
+      type: w3c
+
+kafka:
+  topics:
+    user-actions: stats.user-actions.v1
+    events-similarity: stats.events-similarity.v1
 
 eureka:
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: "${spring.application.name}:${random.value}"
+    metadata-map:
+      zone: docker
+      version: ${spring.application.version:latest}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: recommendation-aggregator
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+
+logging:
+  level:
+    ru.practicum: INFO
+    org.apache.kafka: WARN
+    org.springframework.cloud.sleuth: DEBUG
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr([${spring.zipkin.service.name:${spring.application.name:-}},%X{traceId:-},%X{spanId:-},%X{X-B3-Sampled:-}]){yellow} %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"

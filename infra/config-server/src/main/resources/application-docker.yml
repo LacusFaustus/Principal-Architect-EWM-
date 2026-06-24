@@ -1,4 +1,72 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: config-server
+  cloud:
+    config:
+      server:
+        git:
+          default-label: main
+          uri: https://github.com/yandex-praktikum/java-explore-with-me-config
+          search-paths: configs
+          timeout: 5
+          clone-on-start: true
+          force-pull: true
+  zipkin:
+    base-url: http://zipkin:9411
+    sender:
+      type: web
+    service:
+      name: config-server
+  sleuth:
+    sampler:
+      probability: 1.0
+    trace-id128: true
+    baggage:
+      remote-fields:
+        - user-id
+        - correlation-id
+    log:
+      slf4j:
+        enabled: true
+    propagation:
+      type: w3c
+
 eureka:
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+    metadata-map:
+      zone: docker
+      version: ${spring.application.version:latest}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: config-server
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+
+logging:
+  level:
+    ru.practicum: INFO
+    org.springframework.cloud.sleuth: DEBUG
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr([${spring.zipkin.service.name:${spring.application.name:-}},%X{traceId:-},%X{spanId:-},%X{X-B3-Sampled:-}]){yellow} %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"

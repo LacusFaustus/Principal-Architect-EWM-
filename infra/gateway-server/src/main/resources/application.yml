@@ -13,6 +13,15 @@ spring:
           enabled: true
           lower-case-service-id: true
       routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: authServiceCB
+                fallbackUri: forward:/fallback/auth
         - id: user-service
           uri: lb://user-service
           predicates:
@@ -25,7 +34,7 @@ spring:
         - id: event-service
           uri: lb://event-service
           predicates:
-            - Path=/admin/categories/**, /categories/**, /admin/compilations/**, /compilations/**, /admin/events/**, /events/**, /users/*/events/**
+            - Path=/admin/categories/**, /categories/**, /admin/compilations/**, /compilations/**, /admin/events/**, /events/**
           filters:
             - name: CircuitBreaker
               args:

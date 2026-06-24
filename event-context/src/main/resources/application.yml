@@ -1,0 +1,11 @@
+# Event Context Configuration
+# Этот модуль не является самостоятельным сервисом,
+# он используется как библиотека для других модулей
+
+spring:
+  application:
+    name: event-context
+
+logging:
+  level:
+    ru.practicum.eventcontext: DEBUG

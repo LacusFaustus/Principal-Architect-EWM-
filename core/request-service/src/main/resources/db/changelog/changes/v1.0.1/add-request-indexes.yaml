@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-request-indexes
+      author: practicum
+      changes:
+        - createIndex:
+            tableName: requests
+            indexName: idx_requests_requester_id
+            columns:
+              - column:
+                  name: requester_id
+        - createIndex:
+            tableName: requests
+            indexName: idx_requests_event_id
+            columns:
+              - column:
+                  name: event_id
+        - createIndex:
+            tableName: requests
+            indexName: idx_requests_status
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            tableName: requests
+            indexName: idx_requests_event_status
+            columns:
+              - column:
+                  name: event_id
+              - column:
+                  name: status
+        - createIndex:
+            tableName: requests
+            indexName: idx_requests_requester_event
+            columns:
+              - column:
+                  name: requester_id
+              - column:
+                  name: event_id
+              - column:
+                  name: status

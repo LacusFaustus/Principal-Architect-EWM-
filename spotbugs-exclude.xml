@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <Match>
+        <!-- Ignore Lombok generated code -->
+        <Package name="ru.practicum.*" />
+        <Bug pattern="EI_EXPOSE_REP, EI_EXPOSE_REP2, RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE, UPM_UNCALLED_PRIVATE_METHOD" />
+    </Match>
+
+    <Match>
+        <!-- DTOs with MapStruct can have unused fields -->
+        <Class name="~.*Dto" />
+        <Bug pattern="UWF_UNWRITTEN_FIELD" />
+    </Match>
+
+    <Match>
+        <!-- Entity equals/hashCode pattern -->
+        <Class name="~.*(Entity|Event|User|Comment)" />
+        <Bug pattern="EQ_DOESNT_OVERRIDE_EQUALS" />
+    </Match>
+
+    <Match>
+        <!-- Ignore generated code -->
+        <Package name="ru.practicum.stats.proto" />
+    </Match>
+
+    <Match>
+        <!-- Ignore Avro generated code -->
+        <Package name="ru.practicum.ewm.stats.avro" />
+    </Match>
+</FindBugsFilter>

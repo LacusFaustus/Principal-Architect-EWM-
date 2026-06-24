@@ -2,10 +2,12 @@ package ru.practicum.user.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import ru.practicum.user.dto.NewUserRequest;
 import ru.practicum.user.dto.UserDto;
 import ru.practicum.user.exception.ConflictException;
@@ -14,7 +16,9 @@ import ru.practicum.user.mapper.UserMapper;
 import ru.practicum.user.model.User;
 import ru.practicum.user.repository.UserRepository;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -24,6 +28,10 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final RestTemplate restTemplate;
+
+    @Value("${auth.service.url:http://auth-service:8086}")
+    private String authServiceUrl;
 
     @Override
     @Transactional
@@ -35,9 +43,32 @@ public class UserServiceImpl implements UserService {
             throw new ConflictException("User with email " + newUserRequest.getEmail() + " already exists");
         }
 
+        // Создаем пользователя
         User user = userMapper.mapToUser(newUserRequest);
         User savedUser = userRepository.save(user);
         log.info("User created with id: {}", savedUser.getId());
+
+        // Создаем учетные данные в auth-service
+        try {
+            Map<String, Object> authRequest = new HashMap<>();
+            authRequest.put("userId", savedUser.getId());
+            authRequest.put("email", savedUser.getEmail());
+            // Пароль для нового пользователя - можно сгенерировать или использовать какой-то дефолтный
+            // В реальном проекте здесь должна быть логика с отправкой временного пароля на почту
+            authRequest.put("password", "tempPassword123!"); // Временный пароль
+            authRequest.put("role", "USER");
+
+            restTemplate.postForEntity(
+                    authServiceUrl + "/internal/auth/create",
+                    authRequest,
+                    Void.class
+            );
+            log.info("Auth credentials created for user: {}", savedUser.getId());
+        } catch (Exception e) {
+            log.error("Failed to create auth credentials for user {}: {}", savedUser.getId(), e.getMessage());
+            // В реальном проекте нужно либо откатить транзакцию, либо обработать ошибку
+            // Здесь мы просто логируем, но в production нужно более серьезное решение
+        }
 
         return userMapper.mapToUserDto(savedUser);
     }

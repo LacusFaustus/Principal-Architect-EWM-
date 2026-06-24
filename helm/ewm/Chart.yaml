@@ -1,0 +1,16 @@
+apiVersion: v2
+name: ewm
+description: Explore With Me Plus - Microservices Event Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - event
+  - microservices
+  - spring-boot
+  - kafka
+  - postgresql
+home: https://github.com/LacusFaustus/java-explore-with-me-plus
+maintainers:
+  - name: LacusFaustus
+    email: lacusfaustus@example.com

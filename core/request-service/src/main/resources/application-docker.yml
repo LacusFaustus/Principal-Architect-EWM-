@@ -2,28 +2,92 @@ server:
   port: 8084
 
 spring:
+  application:
+    name: request-service
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
   datasource:
-    url: jdbc:h2:mem:requestdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
+    url: jdbc:postgresql://request-db:5432/requestdb
+    username: request
+    password: requestpass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.xml
+  redis:
+    host: redis
+    port: 6379
+    password: redispass
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 20
+        max-idle: 10
+        min-idle: 5
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000
+      cache-null-values: false
+  kafka:
+    bootstrap-servers: kafka:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+  zipkin:
+    base-url: http://zipkin:9411
+    sender:
+      type: web
+    service:
+      name: request-service
+  sleuth:
+    sampler:
+      probability: 1.0
+    trace-id128: true
+    baggage:
+      remote-fields:
+        - user-id
+        - correlation-id
+    log:
+      slf4j:
+        enabled: true
+    propagation:
+      type: w3c
 
 eureka:
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+    metadata-map:
+      zone: docker
+      version: ${spring.application.version:latest}
 
 grpc:
   client:
@@ -33,6 +97,54 @@ grpc:
       keepAliveWithoutCalls: true
       negotiationType: plaintext
 
+resilience4j:
+  circuitbreaker:
+    instances:
+      eventService:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000
+        permitted-number-of-calls-in-half-open-state: 3
+      userService:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000
+        permitted-number-of-calls-in-half-open-state: 3
+  retry:
+    instances:
+      eventService:
+        max-attempts: 3
+        wait-duration: 1000
+        retry-exceptions:
+          - org.springframework.web.client.HttpServerErrorException
+      userService:
+        max-attempts: 3
+        wait-duration: 1000
+        retry-exceptions:
+          - org.springframework.web.client.HttpServerErrorException
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: request-service
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+
 logging:
   level:
     ru.practicum: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
+    org.springframework.cloud.sleuth: DEBUG
+    org.apache.kafka: WARN
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr([${spring.zipkin.service.name:${spring.application.name:-}},%X{traceId:-},%X{spanId:-},%X{X-B3-Sampled:-}]){yellow} %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"

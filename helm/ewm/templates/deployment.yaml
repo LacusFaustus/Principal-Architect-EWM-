@@ -1,0 +1,82 @@
+{{- define "ewm.deployment" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ewm.fullname" . }}-{{ .name }}
+  labels:
+    app: {{ include "ewm.fullname" . }}
+    service: {{ .name }}
+spec:
+  replicas: {{ .replicas }}
+  selector:
+    matchLabels:
+      app: {{ include "ewm.fullname" . }}
+      service: {{ .name }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "ewm.fullname" . }}
+        service: {{ .name }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port: "{{ .port }}"
+    spec:
+      containers:
+        - name: {{ .name }}
+          image: "{{ .image.repository }}:{{ .image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .image.pullPolicy }}
+          ports:
+            - containerPort: {{ .port }}
+              name: http
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "kubernetes"
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: "{{ .eurekaUrl }}"
+            - name: SPRING_DATASOURCE_URL
+              value: "{{ .datasourceUrl }}"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "{{ .datasourceUsername }}"
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ewm.fullname" . }}-db-secret
+                  key: password
+            - name: SPRING_REDIS_HOST
+              value: "{{ include "ewm.fullname" . }}-redis"
+            - name: SPRING_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ewm.fullname" . }}-redis-secret
+                  key: password
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "{{ include "ewm.fullname" . }}-kafka:9092"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ewm.fullname" . }}-jwt-secret
+                  key: secret
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "ewm.fullname" . }}-config
+      restartPolicy: Always
+  {{- end -}}

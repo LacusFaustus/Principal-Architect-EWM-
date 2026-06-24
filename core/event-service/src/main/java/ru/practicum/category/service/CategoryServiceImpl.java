@@ -6,14 +6,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.category.repository.CategoryRepository;
-import ru.practicum.category.dto.NewCategoryRequest;
 import ru.practicum.category.dto.CategoryDto;
+import ru.practicum.category.dto.NewCategoryRequest;
 import ru.practicum.category.dto.UpdateCategoryDto;
 import ru.practicum.category.mapper.CategoryMapper;
 import ru.practicum.category.model.Category;
-import ru.practicum.handler.exception.NotFoundException;
+import ru.practicum.category.repository.CategoryRepository;
 import ru.practicum.handler.exception.ConflictException;
+import ru.practicum.handler.exception.NotFoundException;
 
 import java.util.Optional;
 
@@ -49,7 +49,6 @@ public class CategoryServiceImpl implements CategoryService {
     public void deleteCategory(Long catId) {
         checkCategoryExists(catId);
         categoryRepository.deleteById(catId);
-
         log.info("DELETE category: id={}", catId);
     }
 
@@ -62,7 +61,6 @@ public class CategoryServiceImpl implements CategoryService {
         String newName = updateCategoryDto.getName();
 
         if (newName != null && !newName.equals(category.getName())) {
-
             Optional<Category> existingCategory = categoryRepository.findByName(newName);
 
             if (existingCategory.isPresent()) {
@@ -85,29 +83,20 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryDto getCategory(Long catId) {
         log.info("GET category: id={}", catId);
         Category category = checkCategoryExists(catId);
-
         log.debug("FIND category: {}", category);
-
-        CategoryDto categoryDto = categoryMapper.mapToCategoryDto(category);
-        log.debug("MAP category: {}", categoryDto);
-
-        return categoryDto;
+        return categoryMapper.mapToCategoryDto(category);
     }
 
     @Override
     public Page<CategoryDto> getCategories(Pageable pageable) {
         log.info("GET categories");
-
         Page<CategoryDto> categories = categoryRepository.findAll(pageable)
                 .map(categoryMapper::mapToCategoryDto);
-
         log.info("FIND categories: size={}", categories.getTotalElements());
-
         return categories;
     }
 
     private Category checkCategoryExists(Long catId) {
-
         return categoryRepository.findById(catId)
                 .orElseThrow(() -> {
                     log.error("Category {} not found", catId);
