@@ -8,15 +8,6 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
       </profile>
-      <profile name="Annotation profile for recommendation-analyzer" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.34/lombok-1.18.34.jar" />
-        </processorPath>
-        <module name="recommendation-analyzer" />
-      </profile>
       <profile name="Annotation profile for Explore With Me Plus" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
@@ -54,6 +45,15 @@
         </processorPath>
         <module name="event-context" />
       </profile>
+      <profile name="Annotation profile for recommendation-analyzer" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.34/lombok-1.18.34.jar" />
+        </processorPath>
+        <module name="recommendation-analyzer" />
+      </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="main-service" target="21" />
@@ -67,14 +67,16 @@
       <module name="common-eventsourcing" options="-parameters" />
       <module name="common-infra" options="-parameters" />
       <module name="config-server" options="-parameters" />
-      <module name="core" options="" />
+      <module name="core" options="-parameters" />
       <module name="discovery-server" options="-parameters" />
       <module name="event-context" options="-parameters" />
       <module name="event-service" options="-parameters" />
+      <module name="explore-with-me" options="-parameters" />
       <module name="feign-clients" options="-parameters" />
       <module name="gateway-server" options="-parameters" />
-      <module name="infra" options="" />
+      <module name="infra" options="-parameters" />
       <module name="main-service" options="-parameters" />
+      <module name="performance-tests" options="-parameters" />
       <module name="recommendation-aggregator" options="-parameters" />
       <module name="recommendation-analyzer" options="-parameters" />
       <module name="recommendation-collector" options="-parameters" />
@@ -83,6 +85,7 @@
       <module name="stat-svc-client" options="-parameters" />
       <module name="stat-svc-dto" options="-parameters" />
       <module name="stat-svc-service" options="-parameters" />
+      <module name="stats-service" options="-parameters" />
       <module name="user-dto" options="-parameters" />
       <module name="user-service" options="-parameters" />
     </option>

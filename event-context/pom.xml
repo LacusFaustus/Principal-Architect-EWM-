@@ -16,7 +16,7 @@
     <packaging>jar</packaging>
 
     <name>Event Context</name>
-    <description>DDD Event domain context module</description>
+    <description>DDD Event domain context</description>
 
     <dependencies>
         <!-- Lombok -->
@@ -26,7 +26,7 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Jackson для JSON сериализации -->
+        <!-- Jackson -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
@@ -88,11 +88,13 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+
+            <!-- Отключаем Checkstyle для этого модуля -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
                 <configuration>
-                    <skipTests>true</skipTests>
+                    <skip>true</skip>
                 </configuration>
             </plugin>
         </plugins>

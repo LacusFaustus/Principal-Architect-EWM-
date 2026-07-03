@@ -28,7 +28,6 @@
             <artifactId>common-dto</artifactId>
             <version>1.0.0</version>
         </dependency>
-        <!-- Добавляем зависимость от stat-svc-dto -->
         <dependency>
             <groupId>ru.practicum</groupId>
             <artifactId>stat-svc-dto</artifactId>
