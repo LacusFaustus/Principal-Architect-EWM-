@@ -2,28 +2,24 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ "main", "Principal-Architect-EWM-", "develop" ]
+    branches: [ "main", "develop", "feature/*" ]
   pull_request:
-    branches: [ "main", "Principal-Architect-EWM-" ]
-  workflow_dispatch:  # Позволяет запускать вручную
+    branches: [ "main", "develop" ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    # Стратегия для разных версий Java (опционально)
     strategy:
       matrix:
         java: [21]
 
     steps:
-      # 1. Checkout кода
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Полная история для корректной работы плагинов
+          fetch-depth: 0
 
-      # 2. Настройка JDK
       - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v4
         with:
@@ -31,60 +27,33 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # 3. Кэширование Maven зависимостей
       - name: Cache Maven dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      # 4. Сборка всех модулей в правильном порядке
-      - name: Build with Maven
-        run: |
-          # Сначала собираем общие модули
-          mvn clean install -pl core/common-dto -am -DskipTests
-          mvn clean install -pl core/common-infra -am -DskipTests
-          mvn clean install -pl core/common-eventsourcing -am -DskipTests
-          mvn clean install -pl stats-service/stat-svc-dto -am -DskipTests
-          
-          # Затем собираем инфраструктуру
-          mvn clean install -pl infra -am -DskipTests
-          
-          # Собираем recommendation-schema (генерирует proto и avro)
-          mvn clean install -pl stats-service/recommendation-schema -am -DskipTests
-          
-          # Собираем feign-clients
-          mvn clean install -pl core/feign-clients -am -DskipTests
-          
-          # Собираем все core модули
-          mvn clean install -pl core -am -DskipTests
-          
-          # Собираем stats-service
-          mvn clean install -pl stats-service -am -DskipTests
-          
-          # Финальная полная сборка
-          mvn clean install -DskipTests
+      - name: Build entire project
+        run: mvn clean install -DskipTests -U
 
-      # 5. Запуск тестов (если нужны)
-      - name: Run tests
-        run: |
-          # Тесты только для модулей, где они есть
-          mvn test -pl core/common-dto -DskipTests=false
-          mvn test -pl core/user-service -DskipTests=false
-          mvn test -pl core/event-service -DskipTests=false
+      - name: Run tests with coverage
+        run: mvn test jacoco:report
 
-      # 6. Проверка стиля кода (опционально)
-      - name: Checkstyle
-        run: mvn checkstyle:check -Dcheckstyle.skip=false || echo "Checkstyle warnings found, but continuing"
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            **/target/site/jacoco/
+            !**/target/site/jacoco/jacoco-sessions.xml
 
-      # 7. Отчет о покрытии (опционально)
-      - name: Generate coverage report
-        run: |
-          mvn jacoco:report -pl core/user-service
-          mvn jacoco:report -pl core/event-service
+      - name: Run Checkstyle
+        run: mvn checkstyle:check -Dcheckstyle.skip=false || echo "Checkstyle warnings found"
 
-      # 8. Сохранение артефактов
+      - name: Run SpotBugs
+        run: mvn spotbugs:check || echo "SpotBugs warnings found"
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -94,8 +63,6 @@ jobs:
             **/target/site/jacoco/
           retention-days: 7
 
-      # 9. Уведомление об ошибках (опционально)
       - name: Notify on failure
         if: failure()
-        run: |
-          echo "❌ Build failed! Check logs for details."
+        run: echo "❌ Build failed! Check logs for details."

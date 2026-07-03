@@ -2,9 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [ "main", "Principal-Architect-EWM-" ]
+    branches: [ "main", "develop", "feature/*" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
 
 jobs:
   build:

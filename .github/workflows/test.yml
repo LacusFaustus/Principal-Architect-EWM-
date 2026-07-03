@@ -2,9 +2,9 @@ name: Test Workflow
 
 on:
   push:
-    branches: [ "Principal-Architect-EWM-", "main" ]
+    branches: [ "main", "develop", "feature/*" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
 
 jobs:
   test:
