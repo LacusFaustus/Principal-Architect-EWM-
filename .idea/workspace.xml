@@ -4,18 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0a6f7e91-b965-4787-87d6-fbae8b269114" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.github/workflows/maven.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/maven.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/auth-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/auth-service/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/event-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/event-service/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/feign-clients/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/feign-clients/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/stats-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/stats-service/recommendation-analyzer/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/recommendation-analyzer/pom.xml" afterDir="false" />
-    </list>
+    <list default="true" id="0a6f7e91-b965-4787-87d6-fbae8b269114" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -239,7 +228,7 @@
       <workItem from="1782030776066" duration="10636000" />
       <workItem from="1782041701001" duration="6430000" />
       <workItem from="1782069422990" duration="41792000" />
-      <workItem from="1782586882302" duration="12658000" />
+      <workItem from="1782586882302" duration="13220000" />
     </task>
     <servers />
   </component>
