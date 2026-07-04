@@ -1,0 +1,25 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+  main:
+    allow-bean-definition-overriding: true
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration
+
+jwt:
+  secret: test-secret-key-for-testing-only-32-chars
+  expiration: 86400000
+  refresh-expiration: 604800000
+
+eureka:
+  client:
+    enabled: false
+
+logging:
+  level:
+    ru.practicum: DEBUG
