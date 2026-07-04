@@ -5,19 +5,35 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.practicum.auth.TestSecurityConfig;
 import ru.practicum.auth.dto.LoginRequest;
 import ru.practicum.auth.dto.LoginResponse;
 import ru.practicum.auth.dto.RefreshTokenRequest;
+import ru.practicum.auth.security.JwtTokenProvider;
 import ru.practicum.auth.service.AuthService;
+import ru.practicum.auth.service.TokenService;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(AuthController.class)
+@WebMvcTest(
+        value = AuthController.class,
+        excludeAutoConfiguration = {
+                org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration.class
+        }
+)
+@ActiveProfiles("test")
+@Import(TestSecurityConfig.class)
 class AuthControllerTest {
 
     @Autowired
@@ -28,6 +44,12 @@ class AuthControllerTest {
 
     @MockBean
     private AuthService authService;
+
+    @MockBean
+    private TokenService tokenService;
+
+    @MockBean
+    private JwtTokenProvider jwtTokenProvider;
 
     @Test
     void login_ShouldReturnToken() throws Exception {
@@ -81,6 +103,8 @@ class AuthControllerTest {
 
     @Test
     void logout_ShouldReturnOk() throws Exception {
+        doNothing().when(authService).logout("token");
+
         mockMvc.perform(post("/api/auth/logout")
                         .header("Authorization", "Bearer token"))
                 .andExpect(status().isOk());

@@ -146,6 +146,26 @@ class AuthServiceTest {
     }
 
     @Test
+    void refreshToken_WithExpiredToken_ShouldThrowException() {
+        RefreshTokenRequest request = new RefreshTokenRequest();
+        request.setRefreshToken("expired-token");
+
+        RefreshToken refreshToken = RefreshToken.builder()
+                .token("expired-token")
+                .userId(1L)
+                .expiresAt(LocalDateTime.now().minusDays(1))
+                .createdAt(LocalDateTime.now().minusDays(8))
+                .revoked(false)
+                .build();
+
+        when(tokenProvider.validateToken("expired-token")).thenReturn(true);
+        when(tokenProvider.extractEmail("expired-token")).thenReturn("test@example.com");
+        when(refreshTokenRepository.findByToken("expired-token")).thenReturn(Optional.of(refreshToken));
+
+        assertThrows(RuntimeException.class, () -> authService.refreshToken(request));
+    }
+
+    @Test
     void logout_ShouldRevokeToken() {
         RefreshToken refreshToken = RefreshToken.builder()
                 .token("token")
@@ -160,6 +180,15 @@ class AuthServiceTest {
 
         assertTrue(refreshToken.getRevoked());
         verify(refreshTokenRepository).save(refreshToken);
+    }
+
+    @Test
+    void logout_TokenNotFound_ShouldDoNothing() {
+        when(refreshTokenRepository.findByToken("unknown-token")).thenReturn(Optional.empty());
+
+        authService.logout("unknown-token");
+
+        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
     }
 
     @Test

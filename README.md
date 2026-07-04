@@ -1,35 +1,14 @@
 # Explore With Me Plus 🎉
 
 [![Java CI with Maven](https://github.com/LacusFaustus/java-explore-with-me-plus/actions/workflows/maven.yml/badge.svg)](https://github.com/LacusFaustus/java-explore-with-me-plus/actions/workflows/maven.yml)
-[![Coverage](https://img.shields.io/badge/Coverage-65%25-green)](https://github.com/LacusFaustus/java-explore-with-me-plus)
+[![Coverage](https://img.shields.io/badge/Coverage-20%25-yellow)](https://github.com/LacusFaustus/java-explore-with-me-plus)
 [![Java](https://img.shields.io/badge/Java-21-blue)](https://adoptium.net/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen)](https://spring.io/projects/spring-boot)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://www.docker.com/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-blue)](https://kubernetes.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-**Микросервисное приложение-афиша для публикации и поиска событий** с системой рекомендаций на основе пользовательских действий.
-
----
-
-## 📋 Содержание
-
-1. [О проекте](#-о-проекте)
-2. [Ключевые возможности](#-ключевые-возможности)
-3. [Архитектура](#-архитектура)
-4. [Технологический стек](#-технологический-стек)
-5. [Быстрый старт](#-быстрый-старт)
-6. [API Документация](#-api-документация)
-7. [Мониторинг](#-мониторинг)
-8. [Тестирование](#-тестирование)
-9. [Развертывание](#-развертывание)
-10. [Структура проекта](#-структура-проекта)
-11. [Команды](#-команды)
-12. [Участие в разработке](#-участие-в-разработке)
-13. [Лицензия](#-лицензия)
-
----
-
-## 🚀 О проекте
+## 📋 О проекте
 
 **Explore With Me Plus** — это современная микросервисная платформа для управления событиями. Проект позволяет пользователям создавать, публиковать и находить события, а также получать персонализированные рекомендации на основе их действий.
 
@@ -45,8 +24,6 @@
 - 🎯 **GraphQL** — гибкие запросы для событий
 - 🧪 **Нагрузочное тестирование** — JMeter сценарии
 
----
-
 ## 🏗 Архитектура
 ┌─────────────────────────────────────────────────────────────────┐
 │ API Gateway (port: 8080) │
@@ -55,7 +32,7 @@
 │
 ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ Service Discovery (Eureka, port: 8761) │
+│ Service Discovery (Eureka) │
 └─────────────────────────────────────────────────────────────────┘
 │
 ┌───────────────────────┼───────────────────────┐
@@ -68,27 +45,17 @@
 │ │ │
 ▼ ▼ ▼
 ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
-│Comment Service│ │ Stats Service│ │Recommendation │
+│Comment Service│ │ Stats Service │ │Recommendation │
 │ (port: 8085) │ │ (port: 9090) │ │ Collectors │
 └───────────────┘ └───────────────┘ └───────────────┘
 │
 ▼
 ┌─────────────────────┐
-│ Kafka + Schema Reg │
-│ (port: 9092, 8081) │
-└─────────────────────┘
-│
-▼
-┌─────────────────────┐
-│ Aggregator │
-└─────────────────────┘
-│
-▼
-┌─────────────────────┐
-│ Analyzer │
+│ Kafka + Schema │
+│ (port: 9092, 8081)│
 └─────────────────────┘
 
----
+text
 
 ## 🛠 Технологический стек
 
@@ -110,18 +77,7 @@
 | **Контейнеризация** | Docker | 24.0.0 |
 | **Оркестрация** | Kubernetes (Helm) | 1.28 |
 
----
-
 ## 🚀 Быстрый старт
-
-### Требования
-
-- Java 21
-- Maven 3.8+
-- Docker & Docker Compose
-- Git
-
-### Установка
 
 ```bash
 # 1. Клонирование репозитория
@@ -136,6 +92,43 @@ docker-compose up -d
 
 # 4. Проверка статуса
 docker-compose ps
+📚 API Документация
+После запуска доступны следующие эндпоинты:
 
-# 5. Просмотр логов
-docker-compose logs -f
+Gateway: http://localhost:8080
+
+Discovery Server: http://localhost:8761
+
+Grafana: http://localhost:3000 (admin/admin)
+
+Prometheus: http://localhost:9090
+
+Kibana: http://localhost:5601
+
+Swagger UI: http://localhost:8080/swagger-ui.html
+
+📁 Структура проекта
+text
+java-explore-with-me-plus/
+├── core/                    # Основные микросервисы
+│   ├── auth-service/        # Аутентификация и JWT
+│   ├── user-service/        # Управление пользователями
+│   ├── event-service/       # Управление событиями
+│   ├── request-service/     # Управление заявками
+│   ├── comment-service/     # Управление комментариями
+│   └── common-*/            # Общие модули (DTO, инфраструктура)
+├── infra/                   # Инфраструктурные сервисы
+│   ├── discovery-server/    # Eureka Service Discovery
+│   ├── config-server/       # Spring Cloud Config
+│   └── gateway-server/      # API Gateway
+├── stats-service/           # Статистика и рекомендации
+│   ├── stat-svc-*/          # Сервис статистики
+│   └── recommendation-*/    # Рекомендательная система
+├── event-context/           # DDD контекст событий
+├── helm/                    # Helm чарты для Kubernetes
+├── k8s/                     # Kubernetes манифесты
+├── monitoring/              # Prometheus и Grafana
+├── scripts/                 # Вспомогательные скрипты
+└── docker-compose.yml       # Docker Compose для разработки
+📄 Лицензия
+MIT License - см. файл LICENSE

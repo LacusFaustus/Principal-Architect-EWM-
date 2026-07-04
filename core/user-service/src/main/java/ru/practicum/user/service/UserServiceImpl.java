@@ -16,6 +16,7 @@ import ru.practicum.user.mapper.UserMapper;
 import ru.practicum.user.model.User;
 import ru.practicum.user.repository.UserRepository;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -123,6 +124,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<UserDto> getUsersByIdsList(List<Long> ids) {
         log.info("Getting users list by ids: {}", ids);
+
+        if (ids == null || ids.isEmpty()) {
+            log.debug("Ids list is null or empty, returning empty list");
+            return Collections.emptyList();
+        }
 
         List<User> users = userRepository.findAllById(ids);
         return users.stream()
