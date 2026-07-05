@@ -2,8 +2,13 @@ package ru.practicum.comment.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.client.EventFeignClient;
@@ -25,6 +30,7 @@ import ru.practicum.handler.exception.ConflictException;
 import ru.practicum.handler.exception.NotFoundException;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -40,6 +46,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "comments", allEntries = true)
     public CommentDto createComment(Long userId, Long eventId, NewCommentDto dto) {
         log.info("Creating comment: userId={}, eventId={}", userId, eventId);
 
@@ -57,6 +64,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "comments", key = "#commentId")
     public CommentDto updateComment(Long userId, Long commentId, UpdateCommentDto dto) {
         log.info("Updating comment: userId={}, commentId={}", userId, commentId);
 
@@ -81,6 +89,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "comments", key = "#commentId")
     public void deleteComment(Long userId, Long commentId) {
         log.info("Deleting comment: userId={}, commentId={}", userId, commentId);
 
@@ -97,6 +106,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    @Cacheable(value = "comments", key = "#commentId", unless = "#result == null")
     public CommentDto getComment(Long commentId) {
         log.info("Getting comment: commentId={}", commentId);
 
@@ -110,6 +120,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    @Cacheable(value = "comments", key = "'event_' + #eventId + '_' + #pageable", unless = "#result == null || #result.isEmpty()")
     public Page<CommentDto> getEventComments(Long eventId, Pageable pageable) {
         log.info("Getting comments for event: eventId={}", eventId);
 
@@ -142,6 +153,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "comments", key = "#commentId")
     public CommentDto moderateComment(Long commentId, String statusStr) {
         log.info("Moderating comment: commentId={}, status={}", commentId, statusStr);
 
@@ -165,24 +177,26 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
+    @Retryable(value = {DataIntegrityViolationException.class}, maxAttempts = 3, backoff = @Backoff(delay = 100))
     public void likeComment(Long userId, Long commentId) {
         log.info("User likes comment: userId={}, commentId={}", userId, commentId);
 
         checkUserExists(userId);
         checkCommentExists(commentId);
 
-        handleReaction(userId, commentId, true);
+        handleReactionWithRetry(userId, commentId, true);
     }
 
     @Override
     @Transactional
+    @Retryable(value = {DataIntegrityViolationException.class}, maxAttempts = 3, backoff = @Backoff(delay = 100))
     public void dislikeComment(Long userId, Long commentId) {
         log.info("User dislikes comment: userId={}, commentId={}", userId, commentId);
 
         checkUserExists(userId);
         checkCommentExists(commentId);
 
-        handleReaction(userId, commentId, false);
+        handleReactionWithRetry(userId, commentId, false);
     }
 
     @Override
@@ -194,30 +208,39 @@ public class CommentServiceImpl implements CommentService {
         log.info("Reaction removed: userId={}, commentId={}", userId, commentId);
     }
 
-    private void handleReaction(Long userId, Long commentId, boolean isLike) {
-        CommentLike existing = commentLikeRepository.findByUserIdAndCommentId(userId, commentId).orElse(null);
+    private void handleReactionWithRetry(Long userId, Long commentId, boolean isLike) {
+        try {
+            // Пытаемся создать новую реакцию
+            CommentLike newLike = new CommentLike();
+            newLike.setUserId(userId);
+            newLike.setCommentId(commentId);
+            newLike.setIsLike(isLike);
+            newLike.setCreated(LocalDateTime.now());
 
-        if (existing != null) {
-            if (existing.getIsLike().equals(isLike)) {
-                // Same reaction - remove it (toggle off)
-                commentLikeRepository.delete(existing);
-                log.info("Reaction removed (toggle off): userId={}, commentId={}", userId, commentId);
-            } else {
-                // Different reaction - update
-                existing.setIsLike(isLike);
-                existing.setCreated(LocalDateTime.now());
-                commentLikeRepository.save(existing);
-                log.info("Reaction changed: userId={}, commentId={}, newIsLike={}", userId, commentId, isLike);
-            }
-        } else {
-            // New reaction
-            CommentLike like = new CommentLike();
-            like.setUserId(userId);
-            like.setCommentId(commentId);
-            like.setIsLike(isLike);
-            like.setCreated(LocalDateTime.now());
-            commentLikeRepository.save(like);
+            commentLikeRepository.save(newLike);
             log.info("Reaction added: userId={}, commentId={}, isLike={}", userId, commentId, isLike);
+
+        } catch (DataIntegrityViolationException e) {
+            // Реакция уже существует - обновляем или удаляем
+            Optional<CommentLike> existing = commentLikeRepository.findByUserIdAndCommentId(userId, commentId);
+
+            if (existing.isPresent()) {
+                CommentLike existingLike = existing.get();
+                if (existingLike.getIsLike().equals(isLike)) {
+                    // Тот же тип реакции - удаляем (toggle off)
+                    commentLikeRepository.delete(existingLike);
+                    log.info("Reaction removed (toggle off): userId={}, commentId={}", userId, commentId);
+                } else {
+                    // Другой тип - обновляем
+                    existingLike.setIsLike(isLike);
+                    existingLike.setCreated(LocalDateTime.now());
+                    commentLikeRepository.save(existingLike);
+                    log.info("Reaction changed: userId={}, commentId={}, newIsLike={}", userId, commentId, isLike);
+                }
+            } else {
+                // Не должно произойти, но на всякий случай
+                log.warn("Reaction not found after conflict: userId={}, commentId={}", userId, commentId);
+            }
         }
     }
 
@@ -230,13 +253,9 @@ public class CommentServiceImpl implements CommentService {
         Long likes = commentLikeRepository.countLikesByCommentId(comment.getId());
         Long dislikes = commentLikeRepository.countDislikesByCommentId(comment.getId());
 
-        CommentDto dto = commentMapper.toCommentDto(comment, authorShort, likes != null ? likes : 0L, dislikes != null ? dislikes : 0L);
-
-        if (dto.getAuthor() != null && author != null && dto.getAuthor().getId() == null) {
-            dto.getAuthor().setId(author.getId());
-        }
-
-        return dto;
+        return commentMapper.toCommentDto(comment, authorShort,
+                likes != null ? likes : 0L,
+                dislikes != null ? dislikes : 0L);
     }
 
     private void checkUserExists(Long userId) {

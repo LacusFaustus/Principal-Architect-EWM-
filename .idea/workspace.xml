@@ -5,24 +5,25 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0a6f7e91-b965-4787-87d6-fbae8b269114" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.github/workflows/test.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/test.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/auth-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/auth-service/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/auth-service/src/test/java/ru/practicum/auth/controller/AuthControllerTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/auth-service/src/test/java/ru/practicum/auth/controller/AuthControllerTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/auth-service/src/test/java/ru/practicum/auth/service/AuthServiceTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/auth-service/src/test/java/ru/practicum/auth/service/AuthServiceTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/comment-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/comment-service/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/event-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/event-service/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/request-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/request-service/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/request-service/src/test/java/ru/practicum/request/service/RequestServiceTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/request-service/src/test/java/ru/practicum/request/service/RequestServiceTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/service/AuthService.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/auth-service/src/main/java/ru/practicum/auth/service/AuthService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/comment-service/src/main/java/ru/practicum/comment/service/CommentServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/comment-service/src/main/java/ru/practicum/comment/service/CommentServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/compilations/service/CompilationServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/compilations/service/CompilationServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/controller/PublicEventController.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/event-service/src/main/java/ru/practicum/event/controller/PublicEventController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/event-service/src/main/resources/application-docker.yml" beforeDir="false" afterPath="$PROJECT_DIR$/core/event-service/src/main/resources/application-docker.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/user-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/user-service/src/main/java/ru/practicum/user/handler/ApiError.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-service/src/main/java/ru/practicum/user/handler/ApiError.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/user-service/src/main/java/ru/practicum/user/handler/ErrorHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-service/src/main/java/ru/practicum/user/handler/ErrorHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/user-service/src/main/java/ru/practicum/user/service/UserServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-service/src/main/java/ru/practicum/user/service/UserServiceImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/user-service/src/test/java/ru/practicum/user/controller/AdminUserControllerTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-service/src/test/java/ru/practicum/user/controller/AdminUserControllerTest.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/user-service/src/test/java/ru/practicum/user/controller/PublicUserControllerTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-service/src/test/java/ru/practicum/user/controller/PublicUserControllerTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/user-service/src/test/java/ru/practicum/user/handler/ErrorHandlerTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-service/src/test/java/ru/practicum/user/handler/ErrorHandlerTest.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/user-service/src/test/java/ru/practicum/user/service/UserServiceTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-service/src/test/java/ru/practicum/user/service/UserServiceTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/stats-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/stats-service/stat-svc-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/stat-svc-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/user-service/src/test/resources/application-test.yml" beforeDir="false" afterPath="$PROJECT_DIR$/core/user-service/src/test/resources/application-test.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.prod.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.prod.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/infra/gateway-server/src/main/resources/application-docker.yml" beforeDir="false" afterPath="$PROJECT_DIR$/infra/gateway-server/src/main/resources/application-docker.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats-service/stat-svc-service/src/main/java/ru/practicum/statservice/repository/StatRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/stats-service/stat-svc-service/src/main/java/ru/practicum/statservice/repository/StatRepository.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -252,7 +253,8 @@
       <workItem from="1782041701001" duration="6430000" />
       <workItem from="1782069422990" duration="41792000" />
       <workItem from="1782586882302" duration="23384000" />
-      <workItem from="1783109151073" duration="11007000" />
+      <workItem from="1783109151073" duration="11710000" />
+      <workItem from="1783183053916" duration="8655000" />
     </task>
     <servers />
   </component>

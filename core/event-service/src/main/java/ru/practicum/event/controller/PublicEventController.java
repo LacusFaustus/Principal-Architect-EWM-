@@ -11,6 +11,7 @@ import ru.practicum.event.dto.EventShortDto;
 import ru.practicum.event.dto.PageParams;
 import ru.practicum.event.dto.PublicEventParams;
 import ru.practicum.event.service.EventService;
+import ru.practicum.feature.FeatureFlagService;
 import ru.practicum.handler.exception.BadRequestException;
 
 import java.time.LocalDateTime;
@@ -21,7 +22,9 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/events")
 public class PublicEventController {
+
     private final EventService eventService;
+    private final FeatureFlagService featureFlagService;
 
     @GetMapping
     public ResponseEntity<List<EventShortDto>> getEventsByPublicFilters(
@@ -46,8 +49,7 @@ public class PublicEventController {
 
         List<EventShortDto> events = eventService.getEventsByPublicFilters(params, userId);
 
-        return ResponseEntity.ok()
-                .body(events);
+        return ResponseEntity.ok().body(events);
     }
 
     @GetMapping("/{id}")
@@ -57,14 +59,20 @@ public class PublicEventController {
         log.info("Public GET event by ID: {}, userId: {}", id, userId);
         EventFullDto event = eventService.getEventById(id, userId, request);
 
-        return ResponseEntity.ok()
-                .body(event);
+        return ResponseEntity.ok().body(event);
     }
 
     @GetMapping("/recommendations")
     public ResponseEntity<List<EventShortDto>> getRecommendations(
             @RequestHeader("X-EWM-USER-ID") long userId,
             @RequestParam(defaultValue = "10") int size) {
+
+        // Проверяем feature flag
+        if (!featureFlagService.isRecommendationsEnabled()) {
+            log.info("Recommendations are disabled by feature flag");
+            return ResponseEntity.ok().body(List.of());
+        }
+
         log.info("Getting recommendations for user: {}, size: {}", userId, size);
         List<EventShortDto> recommendations = eventService.getRecommendationsForUser(userId, size);
         return ResponseEntity.ok(recommendations);

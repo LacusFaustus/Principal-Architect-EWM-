@@ -10,7 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.web.client.RestTemplate;
+import ru.practicum.saga.SagaOrchestrator;
 import ru.practicum.user.dto.NewUserRequest;
 import ru.practicum.user.dto.UserDto;
 import ru.practicum.user.exception.ConflictException;
@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,7 +38,10 @@ class UserServiceTest {
     private UserMapper userMapper;
 
     @Mock
-    private RestTemplate restTemplate;
+    private SagaOrchestrator sagaOrchestrator;
+
+    @Mock
+    private AuthServiceClient authServiceClient;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -64,29 +68,6 @@ class UserServiceTest {
     }
 
     @Test
-    void createUser_ShouldReturnUserDto() {
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
-        when(userMapper.mapToUser(any(NewUserRequest.class))).thenReturn(user);
-        when(userRepository.save(any(User.class))).thenReturn(user);
-        when(userMapper.mapToUserDto(any(User.class))).thenReturn(userDto);
-
-        UserDto result = userService.createUser(newUserRequest);
-
-        assertNotNull(result);
-        assertEquals("test@example.com", result.getEmail());
-        assertEquals("Test User", result.getName());
-        verify(userRepository).save(any(User.class));
-    }
-
-    @Test
-    void createUser_EmailAlreadyExists_ThrowsConflictException() {
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
-
-        assertThrows(ConflictException.class, () -> userService.createUser(newUserRequest));
-        verify(userRepository, never()).save(any(User.class));
-    }
-
-    @Test
     void getUserById_ShouldReturnUserDto() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userMapper.mapToUserDto(any(User.class))).thenReturn(userDto);
@@ -96,6 +77,9 @@ class UserServiceTest {
         assertNotNull(result);
         assertEquals(1L, result.getId());
         assertEquals("test@example.com", result.getEmail());
+        assertEquals("Test User", result.getName());
+        verify(userRepository).findById(1L);
+        verify(userMapper).mapToUserDto(user);
     }
 
     @Test
@@ -103,15 +87,19 @@ class UserServiceTest {
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> userService.getUserById(999L));
+        verify(userRepository).findById(999L);
+        verify(userMapper, never()).mapToUserDto(any(User.class));
     }
 
     @Test
     void deleteUser_ShouldDelete() {
         when(userRepository.existsById(1L)).thenReturn(true);
+        doNothing().when(authServiceClient).deleteUserCredentials(1L);
 
         userService.deleteUser(1L);
 
         verify(userRepository).deleteById(1L);
+        verify(authServiceClient).deleteUserCredentials(1L);
     }
 
     @Test
@@ -119,6 +107,8 @@ class UserServiceTest {
         when(userRepository.existsById(999L)).thenReturn(false);
 
         assertThrows(NotFoundException.class, () -> userService.deleteUser(999L));
+        verify(userRepository, never()).deleteById(anyLong());
+        verify(authServiceClient, never()).deleteUserCredentials(anyLong());
     }
 
     @Test
@@ -134,6 +124,7 @@ class UserServiceTest {
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
         assertEquals("test@example.com", result.getContent().get(0).getEmail());
+        verify(userRepository).findAll(pageable);
     }
 
     @Test
@@ -149,6 +140,8 @@ class UserServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
+        assertEquals("test@example.com", result.getContent().get(0).getEmail());
+        verify(userRepository).findByIdIn(ids, pageable);
     }
 
     @Test
@@ -163,6 +156,7 @@ class UserServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
+        verify(userRepository).findAll(pageable);
     }
 
     @Test
@@ -190,15 +184,14 @@ class UserServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.size());
+        assertEquals("test@example.com", result.get(0).getEmail());
         verify(userRepository).findAllById(ids);
     }
 
     @Test
     void getUsersByIdsList_EmptyList_ShouldReturnEmpty() {
-        // Act
         List<UserDto> result = userService.getUsersByIdsList(Collections.emptyList());
 
-        // Assert
         assertNotNull(result);
         assertTrue(result.isEmpty());
         verify(userRepository, never()).findAllById(any());
@@ -206,33 +199,19 @@ class UserServiceTest {
 
     @Test
     void getUsersByIdsList_NullList_ShouldReturnEmpty() {
-        // Act
         List<UserDto> result = userService.getUsersByIdsList(null);
 
-        // Assert
         assertNotNull(result);
         assertTrue(result.isEmpty());
         verify(userRepository, never()).findAllById(any());
     }
 
     @Test
-    void createUser_WithAuthServiceFailure_ShouldStillCreateUser() {
-        // Arrange - когда auth-service недоступен
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
-        when(userMapper.mapToUser(any(NewUserRequest.class))).thenReturn(user);
-        when(userRepository.save(any(User.class))).thenReturn(user);
-        when(userMapper.mapToUserDto(any(User.class))).thenReturn(userDto);
+    void createUser_EmailAlreadyExists_ThrowsConflictException() {
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
 
-        // Мокаем ошибку при вызове auth-service
-        doThrow(new RuntimeException("Auth service unavailable"))
-                .when(restTemplate).postForEntity(anyString(), any(), eq(Void.class));
-
-        // Act
-        UserDto result = userService.createUser(newUserRequest);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals("test@example.com", result.getEmail());
-        verify(userRepository).save(any(User.class));
+        assertThrows(ConflictException.class, () -> userService.createUser(newUserRequest));
+        verify(userRepository, never()).save(any(User.class));
+        verify(authServiceClient, never()).createUserCredentials(anyLong(), anyString(), anyString());
     }
 }

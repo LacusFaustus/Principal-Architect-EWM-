@@ -27,6 +27,8 @@ class ErrorHandlerTest {
         assertEquals("User not found", result.getMessage());
         assertEquals("NOT_FOUND", result.getStatus());
         assertNotNull(result.getTimestamp());
+        assertNotNull(result.getReason());
+        assertNotNull(result.getErrors());
     }
 
     @Test
@@ -39,6 +41,8 @@ class ErrorHandlerTest {
         assertEquals("User already exists", result.getMessage());
         assertEquals("CONFLICT", result.getStatus());
         assertNotNull(result.getTimestamp());
+        assertNotNull(result.getReason());
+        assertNotNull(result.getErrors());
     }
 
     @Test
@@ -51,6 +55,28 @@ class ErrorHandlerTest {
         assertEquals("Invalid request", result.getMessage());
         assertEquals("BAD_REQUEST", result.getStatus());
         assertNotNull(result.getTimestamp());
+        assertNotNull(result.getReason());
+        assertNotNull(result.getErrors());
+    }
+
+    @Test
+    void handleBadRequest_WithNullMessage_ShouldHandleGracefully() {
+        // Используем исключение с null сообщением
+        BadRequestException exception = new BadRequestException(null);
+
+        ApiError result = errorHandler.handleBadRequest(exception);
+
+        assertNotNull(result);
+        // Проверяем, что message не null - используем значение по умолчанию
+        assertNotNull(result.getMessage());
+        // Проверяем, что сообщение содержит информацию об ошибке
+        assertTrue(result.getMessage().contains("Incorrectly made request") ||
+                result.getMessage().equals("Unknown error occurred") ||
+                result.getMessage().equals("Incorrectly made request."));
+        assertEquals("BAD_REQUEST", result.getStatus());
+        assertNotNull(result.getTimestamp());
+        assertNotNull(result.getReason());
+        assertNotNull(result.getErrors());
     }
 
     @Test
@@ -63,7 +89,56 @@ class ErrorHandlerTest {
         assertEquals("Internal error", result.getMessage());
         assertEquals("INTERNAL_SERVER_ERROR", result.getStatus());
         assertNotNull(result.getTimestamp());
+        assertNotNull(result.getReason());
+        assertNotNull(result.getErrors());
+        assertFalse(result.getErrors().isEmpty());
     }
 
-    // Удаляем проблемные тесты с null-сообщениями
+    @Test
+    void handleThrowable_WithNullMessage_ShouldHandleGracefully() {
+        // Используем исключение с null сообщением
+        RuntimeException exception = new RuntimeException((String) null);
+
+        ApiError result = errorHandler.handleThrowable(exception);
+
+        assertNotNull(result);
+        // Проверяем, что message не null
+        assertNotNull(result.getMessage());
+        // Проверяем, что сообщение содержит информацию об ошибке
+        assertTrue(result.getMessage().contains("Error occurred") ||
+                result.getMessage().equals("Unknown error occurred") ||
+                result.getMessage().equals("Error occurred"));
+        assertEquals("INTERNAL_SERVER_ERROR", result.getStatus());
+        assertNotNull(result.getTimestamp());
+        assertNotNull(result.getReason());
+        assertNotNull(result.getErrors());
+    }
+
+    @Test
+    void handleBadRequest_WithEmptyMessage_ShouldHandleGracefully() {
+        BadRequestException exception = new BadRequestException("");
+
+        ApiError result = errorHandler.handleBadRequest(exception);
+
+        assertNotNull(result);
+        assertNotNull(result.getMessage());
+        assertEquals("BAD_REQUEST", result.getStatus());
+        assertNotNull(result.getTimestamp());
+        assertNotNull(result.getReason());
+        assertNotNull(result.getErrors());
+    }
+
+    @Test
+    void handleThrowable_WithEmptyMessage_ShouldHandleGracefully() {
+        RuntimeException exception = new RuntimeException("");
+
+        ApiError result = errorHandler.handleThrowable(exception);
+
+        assertNotNull(result);
+        assertNotNull(result.getMessage());
+        assertEquals("INTERNAL_SERVER_ERROR", result.getStatus());
+        assertNotNull(result.getTimestamp());
+        assertNotNull(result.getReason());
+        assertNotNull(result.getErrors());
+    }
 }
