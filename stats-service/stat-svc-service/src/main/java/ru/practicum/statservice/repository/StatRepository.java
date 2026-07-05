@@ -12,7 +12,6 @@ import java.util.List;
 public interface StatRepository extends JpaRepository<EndpointHit, Long> {
 
     // === УНИКАЛЬНЫЕ ХИТЫ ===
-
     @Query("SELECT new ru.practicum.dto.ViewStatsDto(e.app, e.uri, COUNT(DISTINCT e.ip)) " +
             "FROM EndpointHit e " +
             "WHERE e.timestamp BETWEEN :start AND :end " +
@@ -32,7 +31,6 @@ public interface StatRepository extends JpaRepository<EndpointHit, Long> {
                                          @Param("end") LocalDateTime end);
 
     // === НЕ УНИКАЛЬНЫЕ ХИТЫ ===
-
     @Query("SELECT new ru.practicum.dto.ViewStatsDto(e.app, e.uri, COUNT(e.ip)) " +
             "FROM EndpointHit e " +
             "WHERE e.timestamp BETWEEN :start AND :end " +
@@ -50,4 +48,23 @@ public interface StatRepository extends JpaRepository<EndpointHit, Long> {
             "ORDER BY COUNT(e.ip) DESC")
     List<ViewStatsDto> findAllHitsAll(@Param("start") LocalDateTime start,
                                       @Param("end") LocalDateTime end);
+
+    // Оптимизированный запрос для топовых событий за период
+    @Query("SELECT new ru.practicum.dto.ViewStatsDto(e.app, e.uri, COUNT(DISTINCT e.ip)) " +
+            "FROM EndpointHit e " +
+            "WHERE e.timestamp BETWEEN :start AND :end " +
+            "AND e.uri LIKE '/events/%' " +
+            "GROUP BY e.app, e.uri " +
+            "ORDER BY COUNT(DISTINCT e.ip) DESC")
+    List<ViewStatsDto> findTopEventsByViews(@Param("start") LocalDateTime start,
+                                            @Param("end") LocalDateTime end);
+
+    // Запрос для статистики по дням
+    @Query("SELECT DATE(e.timestamp), COUNT(DISTINCT e.ip) " +
+            "FROM EndpointHit e " +
+            "WHERE e.timestamp BETWEEN :start AND :end " +
+            "GROUP BY DATE(e.timestamp) " +
+            "ORDER BY DATE(e.timestamp)")
+    List<Object[]> findDailyActiveUsers(@Param("start") LocalDateTime start,
+                                        @Param("end") LocalDateTime end);
 }

@@ -2,6 +2,8 @@ package ru.practicum.compilations.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -13,7 +15,7 @@ import ru.practicum.compilations.dto.CompilationDto;
 import ru.practicum.compilations.dto.CompilationSearchParam;
 import ru.practicum.compilations.dto.NewCompilationDto;
 import ru.practicum.compilations.dto.UpdateCompilationRequest;
-import ru.practicum.compilations.dto.CompilationMapper;
+import ru.practicum.compilations.mapper.CompilationMapper;
 import ru.practicum.compilations.model.Compilation;
 import ru.practicum.compilations.repository.CompilationRepository;
 import ru.practicum.dto.UserInfoDto;
@@ -28,13 +30,18 @@ import ru.practicum.handler.exception.NotFoundException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @Transactional(readOnly = true)
 public class CompilationServiceImpl implements CompilationService {
+
     private final CompilationRepository compilationRepository;
     private final EventRepository eventRepository;
     private final CompilationMapper compilationMapper;
@@ -44,9 +51,11 @@ public class CompilationServiceImpl implements CompilationService {
     private final RequestFeignClient requestFeignClient;
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
     @Override
     @Transactional
+    @CacheEvict(value = "compilations", allEntries = true)
     public CompilationDto add(NewCompilationDto newCompilationDto) {
         log.info("Adding new compilation: {}", newCompilationDto.getTitle());
 
@@ -65,6 +74,7 @@ public class CompilationServiceImpl implements CompilationService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "compilations", key = "#compId")
     public CompilationDto update(long compId, UpdateCompilationRequest updateRequest) {
         log.info("Updating compilation with id: {}", compId);
 
@@ -92,6 +102,7 @@ public class CompilationServiceImpl implements CompilationService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "compilations", key = "#compId")
     public void delete(long compId) {
         log.info("Deleting compilation with id: {}", compId);
 
@@ -104,6 +115,7 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     @Override
+    @Cacheable(value = "compilations", key = "#compId", unless = "#result == null")
     public CompilationDto get(long compId) {
         log.info("Getting compilation with id: {}", compId);
 
@@ -135,26 +147,26 @@ public class CompilationServiceImpl implements CompilationService {
             return compilationMapper.toCompilationDto(compilation, Collections.emptyList());
         }
 
-        Map<Long, Long> viewsMap = getEventsViews(events);
-        Map<Long, Long> confirmedRequestsMap = getConfirmedRequests(events);
+        // Используем оптимизированный batch-подход
+        Map<Long, Long> viewsMap = getEventsViewsOptimized(events);
+        Map<Long, Long> confirmedRequestsMap = getConfirmedRequestsOptimized(events);
 
         List<Long> initiatorIds = events.stream()
                 .map(Event::getInitiatorId)
                 .distinct()
                 .collect(Collectors.toList());
 
-        Map<Long, UserShortInfoDto> initiatorsMap = getInitiatorsMap(initiatorIds);
+        Map<Long, UserShortInfoDto> initiatorsMap = getInitiatorsMapOptimized(initiatorIds);
 
         List<EventShortDto> eventShortDtos = events.stream()
                 .map(event -> {
                     Long views = viewsMap.getOrDefault(event.getId(), 0L);
-                    // Используем views как rating для совместимости (в рекомендательной системе будет отдельный запрос)
                     Double rating = views != null ? views.doubleValue() : 0.0;
                     Long confirmedRequests = confirmedRequestsMap.getOrDefault(event.getId(), 0L);
-                    UserShortInfoDto initiator = initiatorsMap.get(event.getInitiatorId());
-                    if (initiator == null) {
-                        initiator = new UserShortInfoDto(event.getInitiatorId(), "Unknown User");
-                    }
+                    UserShortInfoDto initiator = initiatorsMap.getOrDefault(
+                            event.getInitiatorId(),
+                            new UserShortInfoDto(event.getInitiatorId(), "Unknown User")
+                    );
                     return eventMapper.toEventShortDto(event, initiator, rating, confirmedRequests);
                 })
                 .collect(Collectors.toList());
@@ -162,7 +174,7 @@ public class CompilationServiceImpl implements CompilationService {
         return compilationMapper.toCompilationDto(compilation, eventShortDtos);
     }
 
-    private Map<Long, UserShortInfoDto> getInitiatorsMap(List<Long> userIds) {
+    private Map<Long, UserShortInfoDto> getInitiatorsMapOptimized(List<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -184,46 +196,124 @@ public class CompilationServiceImpl implements CompilationService {
         }
     }
 
-    private Map<Long, Long> getEventsViews(List<Event> events) {
-        Map<Long, Long> views = new HashMap<>();
-
+    private Map<Long, Long> getEventsViewsOptimized(List<Event> events) {
         if (events.isEmpty()) {
-            return views;
+            return Collections.emptyMap();
         }
 
-        List<String> uris = events.stream()
-                .map(event -> "/events/" + event.getId())
+        List<Long> eventIds = events.stream()
+                .map(Event::getId)
                 .collect(Collectors.toList());
 
-        try {
-            List<ViewStatsDto> stats = statFeignClient.getStats(
-                    LocalDateTime.now().minusYears(1).format(FORMATTER),
-                    LocalDateTime.now().plusYears(1).format(FORMATTER),
-                    uris.isEmpty() ? Collections.emptyList() : uris,
-                    true);
+        List<String> uris = eventIds.stream()
+                .map(id -> "/events/" + id)
+                .collect(Collectors.toList());
 
-            for (ViewStatsDto stat : stats) {
-                String uri = stat.getUri();
-                try {
-                    Long eventId = Long.parseLong(uri.substring(uri.lastIndexOf("/") + 1));
-                    views.put(eventId, stat.getHits());
-                } catch (NumberFormatException e) {
-                    log.warn("Failed to parse event ID from URI: {}", uri);
-                }
+        Map<Long, Long> viewsMap = new HashMap<>();
+
+        try {
+            // Разбиваем на пачки по 50 URI для оптимизации
+            List<List<String>> uriBatches = partitionList(uris, 50);
+
+            List<CompletableFuture<Void>> futures = uriBatches.stream()
+                    .map(batch -> CompletableFuture.runAsync(() -> {
+                        try {
+                            List<ViewStatsDto> stats = statFeignClient.getStats(
+                                    LocalDateTime.now().minusMonths(1).format(FORMATTER),
+                                    LocalDateTime.now().format(FORMATTER),
+                                    batch,
+                                    true
+                            );
+
+                            if (stats != null) {
+                                synchronized (viewsMap) {
+                                    for (ViewStatsDto stat : stats) {
+                                        Long eventId = extractEventIdFromUri(stat.getUri());
+                                        if (eventId != null) {
+                                            viewsMap.merge(eventId, stat.getHits(), Long::sum);
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to get stats batch: {}", e.getMessage());
+                        }
+                    }, executorService))
+                    .collect(Collectors.toList());
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+            // Для событий без просмотров - ставим 0
+            for (Long eventId : eventIds) {
+                viewsMap.putIfAbsent(eventId, 0L);
             }
+
         } catch (Exception e) {
-            log.warn("Error getting stats from stats-service: {}. Returning 0 views for all events.", e.getMessage());
+            log.error("Error getting views batch", e);
+            // Возвращаем карту с нулями
+            for (Long eventId : eventIds) {
+                viewsMap.put(eventId, 0L);
+            }
         }
 
-        return views;
+        return viewsMap;
     }
 
-    private Map<Long, Long> getConfirmedRequests(List<Event> events) {
-        Map<Long, Long> confirmedRequests = new HashMap<>();
+    private Map<Long, Long> getConfirmedRequestsOptimized(List<Event> events) {
+        Map<Long, Long> result = new HashMap<>();
 
-        for (Event event : events) {
-            confirmedRequests.put(event.getId(), 0L);
+        if (events.isEmpty()) {
+            return result;
         }
-        return confirmedRequests;
+
+        try {
+            List<CompletableFuture<Void>> futures = events.stream()
+                    .map(event -> CompletableFuture.runAsync(() -> {
+                        try {
+                            Long count = requestFeignClient.countConfirmedRequestsByEventId(event.getId());
+                            synchronized (result) {
+                                result.put(event.getId(), count != null ? count : 0L);
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to get confirmed requests for event {}: {}", event.getId(), e.getMessage());
+                            synchronized (result) {
+                                result.put(event.getId(), 0L);
+                            }
+                        }
+                    }, executorService))
+                    .collect(Collectors.toList());
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        } catch (Exception e) {
+            log.error("Error getting confirmed requests batch", e);
+            for (Event event : events) {
+                result.put(event.getId(), 0L);
+            }
+        }
+
+        return result;
+    }
+
+    private <T> List<List<T>> partitionList(List<T> list, int batchSize) {
+        if (list == null || list.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<List<T>> batches = new ArrayList<>();
+        for (int i = 0; i < list.size(); i += batchSize) {
+            batches.add(list.subList(i, Math.min(i + batchSize, list.size())));
+        }
+        return batches;
+    }
+
+    private Long extractEventIdFromUri(String uri) {
+        if (uri == null || !uri.startsWith("/events/")) {
+            return null;
+        }
+        try {
+            return Long.parseLong(uri.substring(uri.lastIndexOf("/") + 1));
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

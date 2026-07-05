@@ -1,57 +1,93 @@
 server:
-  port: 8080
+  port: 8083
+  shutdown: graceful
 
 spring:
   application:
-    name: gateway-server
-  cloud:
-    config:
-      enabled: false
-    gateway:
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowedOrigins: "*"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - PATCH
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
-            allowCredentials: true
-            maxAge: 3600
+    name: event-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
-  # Redis configuration for Rate Limiter
+  # === DATASOURCE ===
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://event-db:5432/eventdb
+    username: event
+    password: eventpass
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: EventServiceHikariPool
+
+  # === JPA ===
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+        default_schema: public
+
+  # === LIQUIBASE ===
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    default-schema: public
+
+  # === REDIS ===
   redis:
-    host: ${REDIS_HOST:redis}
-    port: ${REDIS_PORT:6379}
-    password: ${REDIS_PASSWORD:redispass}
+    host: redis
+    port: 6379
+    password: redispass
     timeout: 2000ms
     lettuce:
       pool:
         max-active: 20
         max-idle: 10
         min-idle: 5
+        max-wait: -1ms
 
-  # JWT Configuration
-  jwt:
-    secret: ${JWT_SECRET:your-super-secret-jwt-key-at-least-32-characters-long}
+  # === CACHE ===
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000
+      cache-null-values: false
+      use-key-prefix: true
+      key-prefix: "event:"
 
-  # Zipkin for tracing
+  # === KAFKA ===
+  kafka:
+    bootstrap-servers: kafka:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+        acks: all
+        retries: 3
+        batch-size: 16384
+        linger-ms: 1
+        buffer-memory: 33554432
+
+  # === ZIPKIN (Distributed Tracing) ===
   zipkin:
     base-url: http://zipkin:9411
     sender:
       type: web
     service:
-      name: gateway-server
+      name: event-service
 
-  # Sleuth for distributed tracing
+  # === SLEUTH ===
   sleuth:
     sampler:
       probability: 1.0
@@ -67,39 +103,155 @@ spring:
     propagation:
       type: w3c
 
+  # === GRAPHQL ===
+  graphql:
+    graphiql:
+      enabled: true
+      path: /graphiql
+    cors:
+      allowed-origins: "*"
+      allowed-methods: GET, POST
+    schema:
+      printer:
+        enabled: true
+    servlet:
+      mapping: /graphql
+
+# === EUREKA ===
 eureka:
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/
     register-with-eureka: true
     fetch-registry: true
+    healthcheck:
+      enabled: true
   instance:
     prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
     metadata-map:
       zone: docker
       version: ${spring.application.version:latest}
+      instance-id: ${spring.application.name}:${random.value}
 
+# === GRPC ===
+grpc:
+  client:
+    collector:
+      address: "discovery:///recommendation-collector"
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+      negotiationType: plaintext
+    analyzer:
+      address: "discovery:///recommendation-analyzer"
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+      negotiationType: plaintext
+
+# === RESILIENCE4J ===
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+      requestService:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000
+        permitted-number-of-calls-in-half-open-state: 3
+      statService:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000
+        permitted-number-of-calls-in-half-open-state: 3
+  retry:
+    instances:
+      userService:
+        max-attempts: 3
+        wait-duration: 1000
+        retry-exceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.net.ConnectException
+      requestService:
+        max-attempts: 3
+        wait-duration: 1000
+        retry-exceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.net.ConnectException
+      statService:
+        max-attempts: 3
+        wait-duration: 1000
+        retry-exceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.net.ConnectException
+  timelimiter:
+    instances:
+      userService:
+        timeout-duration: 5s
+      requestService:
+        timeout-duration: 5s
+      statService:
+        timeout-duration: 5s
+
+# === MANAGEMENT (Actuator) ===
 management:
   endpoints:
     web:
       exposure:
         include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
   metrics:
     export:
       prometheus:
         enabled: true
     tags:
-      application: gateway-server
+      application: event-service
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 10ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s
   tracing:
     enabled: true
     sampling:
       probability: 1.0
 
+# === LOGGING ===
 logging:
   level:
-    org.springframework.cloud.gateway: INFO
-    org.springframework.web: INFO
+    ru.practicum: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
     org.springframework.cloud.sleuth: DEBUG
-    ru.practicum.gateway.security: DEBUG
+    org.apache.kafka: WARN
+    org.springframework.graphql: DEBUG
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN
   pattern:
     console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr([${spring.zipkin.service.name:${spring.application.name:-}},%X{traceId:-},%X{spanId:-},%X{X-B3-Sampled:-}]){yellow} %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
+
+# === FEATURE FLAGS ===
+feature:
+  recommendations:
+    enabled: true
+  new-ui:
+    enabled: false
+  comments-moderation:
+    enabled: true
+  analytics:
+    enabled: true

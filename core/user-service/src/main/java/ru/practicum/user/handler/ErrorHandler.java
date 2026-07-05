@@ -32,7 +32,7 @@ public class ErrorHandler {
         log.error("404 Not Found: {}", e.getMessage());
         return new ApiError(
                 getStackTrace(e),
-                e.getMessage(),
+                getMessageOrDefault(e.getMessage(), "The required object was not found."),
                 "The required object was not found.",
                 HttpStatus.NOT_FOUND.name(),
                 LocalDateTime.now().format(FORMATTER)
@@ -45,7 +45,7 @@ public class ErrorHandler {
         log.error("409 Conflict: {}", e.getMessage());
         return new ApiError(
                 getStackTrace(e),
-                e.getMessage(),
+                getMessageOrDefault(e.getMessage(), "For the requested operation the conditions are not met."),
                 "For the requested operation the conditions are not met.",
                 HttpStatus.CONFLICT.name(),
                 LocalDateTime.now().format(FORMATTER)
@@ -65,7 +65,7 @@ public class ErrorHandler {
         log.error("400 Bad Request: {}", e.getMessage());
         return new ApiError(
                 getStackTrace(e),
-                e.getMessage(),
+                getMessageOrDefault(e.getMessage(), "Incorrectly made request."),
                 "Incorrectly made request.",
                 HttpStatus.BAD_REQUEST.name(),
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
@@ -78,7 +78,7 @@ public class ErrorHandler {
         log.error("500 Internal Server Error: {}", e.getMessage(), e);
         return new ApiError(
                 getStackTrace(e),
-                e.getMessage(),
+                getMessageOrDefault(e.getMessage(), "Error occurred"),
                 "Error occurred",
                 HttpStatus.INTERNAL_SERVER_ERROR.name(),
                 LocalDateTime.now().format(FORMATTER)
@@ -89,5 +89,9 @@ public class ErrorHandler {
         return Arrays.stream(e.getStackTrace())
                 .map(StackTraceElement::toString)
                 .collect(Collectors.toList());
+    }
+
+    private String getMessageOrDefault(String message, String defaultMessage) {
+        return (message != null && !message.isEmpty()) ? message : defaultMessage;
     }
 }

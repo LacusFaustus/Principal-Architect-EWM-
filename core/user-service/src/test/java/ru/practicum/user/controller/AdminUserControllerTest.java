@@ -63,7 +63,32 @@ class AdminUserControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.email").value("test@example.com"));
+                .andExpect(jsonPath("$.email").value("test@example.com"))
+                .andExpect(jsonPath("$.name").value("Test User"));
+    }
+
+    @Test
+    void createUser_WithInvalidEmail_ShouldReturnBadRequest() throws Exception {
+        NewUserRequest request = new NewUserRequest();
+        request.setEmail("invalid-email");
+        request.setName("Test User");
+
+        mockMvc.perform(post("/admin/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createUser_WithEmptyName_ShouldReturnBadRequest() throws Exception {
+        NewUserRequest request = new NewUserRequest();
+        request.setEmail("test@example.com");
+        request.setName("");
+
+        mockMvc.perform(post("/admin/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -77,10 +102,7 @@ class AdminUserControllerTest {
     }
 
     @Test
-    void getUsers_ShouldReturnList() throws Exception {
-        List<Long> ids = List.of(1L, 2L);
-        PageRequest pageable = PageRequest.of(0, 10);
-
+    void getUsers_WithIds_ShouldReturnList() throws Exception {
         UserDto user1 = new UserDto();
         user1.setId(1L);
         user1.setName("User 1");
@@ -101,15 +123,17 @@ class AdminUserControllerTest {
                         .param("size", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1L))
-                .andExpect(jsonPath("$[1].id").value(2L));
+                .andExpect(jsonPath("$[0].name").value("User 1"))
+                .andExpect(jsonPath("$[1].id").value(2L))
+                .andExpect(jsonPath("$[1].name").value("User 2"));
     }
 
     @Test
-    void getUsers_WithPagination_ShouldReturnList() throws Exception {
-        PageRequest pageable = PageRequest.of(0, 5);
+    void getUsers_WithoutIds_ShouldReturnAll() throws Exception {
         UserDto user1 = new UserDto();
         user1.setId(1L);
         user1.setName("User 1");
+        user1.setEmail("user1@example.com");
 
         Page<UserDto> page = new PageImpl<>(List.of(user1));
 
@@ -119,6 +143,31 @@ class AdminUserControllerTest {
                         .param("from", "0")
                         .param("size", "5"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1L));
+                .andExpect(jsonPath("$[0].id").value(1L))
+                .andExpect(jsonPath("$[0].name").value("User 1"));
+    }
+
+    @Test
+    void getUsers_WithPagination_ShouldReturnCorrectPage() throws Exception {
+        UserDto user1 = new UserDto();
+        user1.setId(1L);
+        user1.setName("User 1");
+        user1.setEmail("user1@example.com");
+
+        UserDto user2 = new UserDto();
+        user2.setId(2L);
+        user2.setName("User 2");
+        user2.setEmail("user2@example.com");
+
+        Page<UserDto> page = new PageImpl<>(List.of(user1, user2));
+
+        when(userService.getUsersByIds(any(), any(PageRequest.class))).thenReturn(page);
+
+        mockMvc.perform(get("/admin/users")
+                        .param("from", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(1L))
+                .andExpect(jsonPath("$[1].id").value(2L));
     }
 }

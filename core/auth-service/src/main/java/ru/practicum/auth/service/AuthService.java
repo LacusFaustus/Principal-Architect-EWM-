@@ -2,6 +2,8 @@ package ru.practicum.auth.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -42,12 +44,15 @@ public class AuthService {
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String accessToken = tokenProvider.generateToken(authentication);
-        String refreshToken = tokenProvider.generateRefreshToken(userDetails.getUsername());
+        String refreshToken = generateUniqueRefreshToken();
 
         UserCredentials user = userCredentialsRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Save refresh token
+        // Инвалидируем старые refresh токены пользователя
+        refreshTokenRepository.deleteAllByUserId(user.getUserId());
+
+        // Сохраняем новый refresh token
         RefreshToken tokenEntity = RefreshToken.builder()
                 .token(refreshToken)
                 .userId(user.getUserId())
@@ -80,8 +85,21 @@ public class AuthService {
         }
 
         String email = tokenProvider.extractEmail(refreshToken);
+
+        // Получаем пользователя по email
+        UserCredentials user = userCredentialsRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Проверяем refresh token в БД
         RefreshToken tokenEntity = refreshTokenRepository.findByToken(refreshToken)
                 .orElseThrow(() -> new RuntimeException("Refresh token not found"));
+
+        // ВАЖНО: Проверяем, что токен принадлежит пользователю
+        if (!tokenEntity.getUserId().equals(user.getUserId())) {
+            log.error("Refresh token doesn't belong to user: tokenUserId={}, requestUserId={}",
+                    tokenEntity.getUserId(), user.getUserId());
+            throw new RuntimeException("Token doesn't belong to user");
+        }
 
         if (tokenEntity.getRevoked() || tokenEntity.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Refresh token expired or revoked");
@@ -94,9 +112,6 @@ public class AuthService {
 
         String newAccessToken = tokenProvider.generateToken(authentication);
 
-        UserCredentials user = userCredentialsRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
         return LoginResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(refreshToken)
@@ -108,6 +123,7 @@ public class AuthService {
                 .build();
     }
 
+    @CacheEvict(value = "tokens", key = "#token")
     public void logout(String token) {
         refreshTokenRepository.findByToken(token)
                 .ifPresent(refreshToken -> {
@@ -117,6 +133,7 @@ public class AuthService {
                 });
     }
 
+    @Cacheable(value = "tokens", key = "#token")
     public boolean validateToken(String token) {
         return tokenProvider.validateToken(token);
     }
@@ -131,5 +148,11 @@ public class AuthService {
                 .failedAttempts(0)
                 .build();
         return userCredentialsRepository.save(user);
+    }
+
+    private String generateUniqueRefreshToken() {
+        // Генерируем уникальный refresh token
+        return UUID.randomUUID().toString().replace("-", "")
+                + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
     }
 }
