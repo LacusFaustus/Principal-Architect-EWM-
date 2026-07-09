@@ -1,5 +1,6 @@
 package ru.practicum.event.service;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,11 +34,15 @@ import ru.practicum.event.repository.EventRepository;
 import ru.practicum.handler.exception.BadRequestException;
 import ru.practicum.handler.exception.ConflictException;
 import ru.practicum.handler.exception.NotFoundException;
+import ru.practicum.metrics.BusinessMetrics;
 import ru.practicum.stats.proto.ActionTypeProto;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -54,13 +59,17 @@ public class EventServiceImpl implements EventService {
     private final UserFeignClient userFeignClient;
     private final RequestFeignClient requestFeignClient;
     private final RecommendationGrpcClient recommendationGrpcClient;
+    private final BusinessMetrics businessMetrics;
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final int MIN_HOURS_BEFORE_EVENT = 2;
     private static final int MAX_PAGE_SIZE = 100;
     private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
-    // ==================== PRIVATE USER METHODS ====================
+    // ============================================================
+    // PRIVATE USER METHODS
+    // ============================================================
 
     @Override
     public List<EventShortDto> getEvents(Long userId, Pageable pageable) {
@@ -76,25 +85,7 @@ public class EventServiceImpl implements EventService {
             return Collections.emptyList();
         }
 
-        Map<Long, UserInfoDto> usersMap = getUsersMap(events.getContent().stream()
-                .map(Event::getInitiatorId)
-                .collect(Collectors.toList()));
-
-        Map<Long, Double> ratingsMap = getEventsRatings(events.getContent());
-        Map<Long, Long> confirmedRequestsMap = getConfirmedRequests(events.getContent());
-
-        List<EventShortDto> result = events.getContent().stream()
-                .map(event -> {
-                    UserInfoDto userDto = usersMap.get(event.getInitiatorId());
-                    UserShortInfoDto initiator = createUserShortInfo(userDto, event.getInitiatorId());
-                    Double rating = ratingsMap.getOrDefault(event.getId(), 0.0);
-                    Long confirmed = confirmedRequestsMap.getOrDefault(event.getId(), 0L);
-                    return eventMapper.toEventShortDto(event, initiator, rating, confirmed);
-                })
-                .collect(Collectors.toList());
-
-        log.info("Found {} events for user ID={}", result.size(), userId);
-        return result;
+        return buildEventShortDtosOptimized(events.getContent());
     }
 
     @Override
@@ -110,6 +101,8 @@ public class EventServiceImpl implements EventService {
 
         Event event = eventMapper.toEvent(newEventDto, category, userId);
         Event savedEvent = eventRepository.save(event);
+
+        businessMetrics.recordEventCreated();
         log.info("Event saved with ID={}", savedEvent.getId());
 
         UserInfoDto userDto = getUserOrThrow(userId);
@@ -168,7 +161,9 @@ public class EventServiceImpl implements EventService {
         return eventMapper.toEventFullDto(savedEvent, initiator, rating, confirmed);
     }
 
-    // ==================== ADMIN METHODS ====================
+    // ============================================================
+    // ADMIN METHODS
+    // ============================================================
 
     @Override
     public List<EventFullDto> getEventsByAdminFilters(EventParams params) {
@@ -187,27 +182,7 @@ public class EventServiceImpl implements EventService {
             return Collections.emptyList();
         }
 
-        List<Long> initiatorIds = events.getContent().stream()
-                .map(Event::getInitiatorId)
-                .distinct()
-                .collect(Collectors.toList());
-
-        Map<Long, UserInfoDto> usersMap = getUsersMap(initiatorIds);
-        Map<Long, Double> ratingsMap = getEventsRatings(events.getContent());
-        Map<Long, Long> confirmedRequestsMap = getConfirmedRequests(events.getContent());
-
-        List<EventFullDto> result = events.getContent().stream()
-                .map(event -> {
-                    UserInfoDto userDto = usersMap.get(event.getInitiatorId());
-                    UserShortInfoDto initiator = createUserShortInfo(userDto, event.getInitiatorId());
-                    Double rating = ratingsMap.getOrDefault(event.getId(), 0.0);
-                    Long confirmed = confirmedRequestsMap.getOrDefault(event.getId(), 0L);
-                    return eventMapper.toEventFullDto(event, initiator, rating, confirmed);
-                })
-                .collect(Collectors.toList());
-
-        log.info("Found {} events matching admin filters", result.size());
-        return result;
+        return buildEventFullDtosOptimized(events.getContent());
     }
 
     @Override
@@ -228,6 +203,10 @@ public class EventServiceImpl implements EventService {
         Event savedEvent = eventRepository.save(event);
         log.info("Event updated by admin: ID={}, state={}", savedEvent.getId(), savedEvent.getState());
 
+        if (savedEvent.getState() == EventState.PUBLISHED) {
+            businessMetrics.recordEventPublished();
+        }
+
         UserInfoDto userDto = getUserOrThrow(event.getInitiatorId());
         UserShortInfoDto initiator = new UserShortInfoDto(userDto.getId(), userDto.getName());
 
@@ -237,7 +216,9 @@ public class EventServiceImpl implements EventService {
         return eventMapper.toEventFullDto(savedEvent, initiator, rating, confirmed);
     }
 
-    // ==================== PUBLIC METHODS ====================
+    // ============================================================
+    // PUBLIC METHODS
+    // ============================================================
 
     @Override
     public List<EventShortDto> getEventsByPublicFilters(PublicEventParams params, Long userId) {
@@ -260,7 +241,7 @@ public class EventServiceImpl implements EventService {
         Page<Event> eventsPage = eventRepository.findEventsByPublicFilters(
                 text, params.getCategories(), params.getPaid(), start, end, pageable);
 
-        return buildEventShortDtos(eventsPage.getContent(), userId);
+        return buildEventShortDtosOptimized(eventsPage.getContent());
     }
 
     @Override
@@ -275,11 +256,13 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Event must be published");
         }
 
-        // Send view action to recommendation service
+        // Отправляем действие просмотра
         sendViewActionIfUserProvided(userId, eventId);
 
-        // Save stats
+        // Сохраняем статистику
         saveStats(request);
+
+        businessMetrics.recordEventViewed();
 
         UserInfoDto userDto = getUserOrThrow(event.getInitiatorId());
         UserShortInfoDto initiator = new UserShortInfoDto(userDto.getId(), userDto.getName());
@@ -315,32 +298,16 @@ public class EventServiceImpl implements EventService {
             return Collections.emptyList();
         }
 
-        // Preserve order from recommendations
+        // Сохраняем порядок
         Map<Long, Event> eventMap = events.stream()
                 .collect(Collectors.toMap(Event::getId, Function.identity()));
 
-        Map<Long, UserInfoDto> usersMap = getUsersMap(events.stream()
-                .map(Event::getInitiatorId)
-                .distinct()
-                .collect(Collectors.toList()));
-
-        Map<Long, Double> ratingsMap = getEventsRatings(events);
-        Map<Long, Long> confirmedRequestsMap = getConfirmedRequests(events);
-
-        List<EventShortDto> result = recommendedEventIds.stream()
+        List<Event> orderedEvents = recommendedEventIds.stream()
                 .filter(eventMap::containsKey)
-                .map(eventId -> {
-                    Event event = eventMap.get(eventId);
-                    UserInfoDto userDto = usersMap.get(event.getInitiatorId());
-                    UserShortInfoDto initiator = createUserShortInfo(userDto, event.getInitiatorId());
-                    Double rating = ratingsMap.getOrDefault(eventId, 0.0);
-                    Long confirmed = confirmedRequestsMap.getOrDefault(eventId, 0L);
-                    return eventMapper.toEventShortDto(event, initiator, rating, confirmed);
-                })
+                .map(eventMap::get)
                 .collect(Collectors.toList());
 
-        log.info("Returning {} recommendations for user: {}", result.size(), userId);
-        return result;
+        return buildEventShortDtosOptimized(orderedEvents);
     }
 
     @Override
@@ -383,10 +350,7 @@ public class EventServiceImpl implements EventService {
             Long confirmedRequests = requestFeignClient.countConfirmedRequestsByEventId(eventId);
             boolean hasRegistration = confirmedRequests != null && confirmedRequests > 0;
 
-            boolean result = isInitiator || hasRegistration;
-            log.debug("User interaction result: userId={}, eventId={}, isInitiator={}, hasRegistration={}, result={}",
-                    userId, eventId, isInitiator, hasRegistration, result);
-            return result;
+            return isInitiator || hasRegistration;
         } catch (Exception e) {
             log.warn("Failed to check user interaction: {}", e.getMessage());
             return false;
@@ -394,7 +358,11 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    @Retryable(value = {Exception.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
+    @Retryable(
+            value = {Exception.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 5000)
+    )
     public void saveStats(HttpServletRequest request) {
         try {
             NewEndpointHitDto hitDto = NewEndpointHitDto.builder()
@@ -408,6 +376,125 @@ public class EventServiceImpl implements EventService {
         } catch (Exception e) {
             log.error("Error saving stats: {}", e.getMessage());
         }
+    }
+
+    // ============================================================
+    // OPTIMIZED BUILDERS
+    // ============================================================
+
+    private List<EventShortDto> buildEventShortDtosOptimized(List<Event> events) {
+        if (events.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Параллельные запросы
+        List<Long> initiatorIds = events.stream()
+                .map(Event::getInitiatorId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        List<Long> eventIds = events.stream()
+                .map(Event::getId)
+                .collect(Collectors.toList());
+
+        CompletableFuture<Map<Long, UserInfoDto>> usersFuture =
+                CompletableFuture.supplyAsync(() -> getUsersMap(initiatorIds), executorService);
+
+        CompletableFuture<Map<Long, Double>> ratingsFuture =
+                CompletableFuture.supplyAsync(() -> getEventsRatings(events), executorService);
+
+        CompletableFuture<Map<Long, Long>> confirmedRequestsFuture =
+                CompletableFuture.supplyAsync(() -> getConfirmedRequestsBatch(eventIds), executorService);
+
+        try {
+            CompletableFuture.allOf(usersFuture, ratingsFuture, confirmedRequestsFuture).join();
+
+            Map<Long, UserInfoDto> usersMap = usersFuture.get();
+            Map<Long, Double> ratingsMap = ratingsFuture.get();
+            Map<Long, Long> confirmedRequestsMap = confirmedRequestsFuture.get();
+
+            return events.stream()
+                    .map(event -> {
+                        UserInfoDto userDto = usersMap.get(event.getInitiatorId());
+                        UserShortInfoDto initiator = createUserShortInfo(userDto, event.getInitiatorId());
+                        Double rating = ratingsMap.getOrDefault(event.getId(), 0.0);
+                        Long confirmed = confirmedRequestsMap.getOrDefault(event.getId(), 0L);
+                        return eventMapper.toEventShortDto(event, initiator, rating, confirmed);
+                    })
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            log.error("Error building optimized event DTOs", e);
+            // Fallback
+            return events.stream()
+                    .map(event -> {
+                        UserShortInfoDto initiator = new UserShortInfoDto(event.getInitiatorId(), "Unknown User");
+                        return eventMapper.toEventShortDto(event, initiator, 0.0, 0L);
+                    })
+                    .collect(Collectors.toList());
+        }
+    }
+
+    private List<EventFullDto> buildEventFullDtosOptimized(List<Event> events) {
+        if (events.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> initiatorIds = events.stream()
+                .map(Event::getInitiatorId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<Long, UserInfoDto> usersMap = getUsersMap(initiatorIds);
+        Map<Long, Double> ratingsMap = getEventsRatings(events);
+        Map<Long, Long> confirmedRequestsMap = getConfirmedRequestsBatch(
+                events.stream().map(Event::getId).collect(Collectors.toList())
+        );
+
+        return events.stream()
+                .map(event -> {
+                    UserInfoDto userDto = usersMap.get(event.getInitiatorId());
+                    UserShortInfoDto initiator = createUserShortInfo(userDto, event.getInitiatorId());
+                    Double rating = ratingsMap.getOrDefault(event.getId(), 0.0);
+                    Long confirmed = confirmedRequestsMap.getOrDefault(event.getId(), 0L);
+                    return eventMapper.toEventFullDto(event, initiator, rating, confirmed);
+                })
+                .collect(Collectors.toList());
+    }
+
+    private Map<Long, Long> getConfirmedRequestsBatch(List<Long> eventIds) {
+        Map<Long, Long> result = new HashMap<>();
+        if (eventIds.isEmpty()) {
+            return result;
+        }
+
+        try {
+            // Используем параллельные запросы с ограничением
+            List<CompletableFuture<Void>> futures = eventIds.stream()
+                    .map(eventId -> CompletableFuture.runAsync(() -> {
+                        try {
+                            Long count = requestFeignClient.countConfirmedRequestsByEventId(eventId);
+                            synchronized (result) {
+                                result.put(eventId, count != null ? count : 0L);
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to get confirmed requests for event {}: {}", eventId, e.getMessage());
+                            synchronized (result) {
+                                result.put(eventId, 0L);
+                            }
+                        }
+                    }, executorService))
+                    .collect(Collectors.toList());
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        } catch (Exception e) {
+            log.error("Error getting confirmed requests batch", e);
+            for (Long eventId : eventIds) {
+                result.put(eventId, 0L);
+            }
+        }
+
+        return result;
     }
 
     // ==================== PRIVATE HELPER METHODS ====================

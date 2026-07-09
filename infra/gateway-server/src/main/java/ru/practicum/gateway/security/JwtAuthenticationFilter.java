@@ -1,8 +1,11 @@
 package ru.practicum.gateway.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -19,6 +22,8 @@ import reactor.core.publisher.Mono;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Component
@@ -27,6 +32,11 @@ public class JwtAuthenticationFilter implements GatewayFilter, Ordered {
     @Value("${jwt.secret:your-super-secret-jwt-key-at-least-32-characters-long}")
     private String jwtSecret;
 
+    // Кэш для валидных токенов (чтобы не проверять каждый раз)
+    private final Set<String> validTokenCache = ConcurrentHashMap.newKeySet();
+    private static final long CACHE_TTL_MS = 300_000; // 5 минут
+
+    // Публичные эндпоинты (не требуют авторизации)
     private static final List<String> PUBLIC_ENDPOINTS = List.of(
             "/api/auth/login",
             "/api/auth/refresh",
@@ -65,30 +75,51 @@ public class JwtAuthenticationFilter implements GatewayFilter, Ordered {
         String token = authHeader.substring(7);
 
         try {
-            // Валидация токена
-            Claims claims = validateToken(token);
-            String userId = claims.get("userId", String.class);
-            String email = claims.getSubject();
-            String role = claims.get("role", String.class);
+            // Проверяем кэш
+            if (!validTokenCache.contains(token)) {
+                // Валидация токена
+                Claims claims = validateToken(token);
+                String userId = claims.get("userId", String.class);
+                String email = claims.getSubject();
+                String role = claims.get("role", String.class);
 
-            if (userId == null) {
-                log.warn("Token missing userId claim");
-                response.setStatusCode(HttpStatus.UNAUTHORIZED);
-                return response.setComplete();
+                if (userId == null) {
+                    log.warn("Token missing userId claim");
+                    response.setStatusCode(HttpStatus.UNAUTHORIZED);
+                    return response.setComplete();
+                }
+
+                // Добавляем в кэш
+                validTokenCache.add(token);
+                log.info("Token validated and cached: userId={}, role={}", userId, role);
             }
 
-            // Добавляем данные пользователя в заголовки для downstream сервисов
+            // Добавляем данные пользователя в заголовки
             ServerHttpRequest mutatedRequest = request.mutate()
-                    .header("X-USER-ID", userId)
-                    .header("X-USER-EMAIL", email != null ? email : "unknown")
-                    .header("X-USER-ROLE", role != null ? role : "USER")
+                    .header("X-USER-ID", extractUserId(token))
+                    .header("X-USER-EMAIL", extractEmail(token))
+                    .header("X-USER-ROLE", extractRole(token))
                     .header("X-AUTHENTICATED", "true")
+                    .header("X-Correlation-Id", generateCorrelationId())
                     .build();
-
-            log.debug("Authenticated user: {} with role: {}", email, role);
 
             return chain.filter(exchange.mutate().request(mutatedRequest).build());
 
+        } catch (ExpiredJwtException e) {
+            log.warn("Token expired: {}", e.getMessage());
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            response.getHeaders().add("X-Token-Error", "expired");
+            return response.setComplete();
+        } catch (SignatureException e) {
+            log.warn("Invalid token signature: {}", e.getMessage());
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            response.getHeaders().add("X-Token-Error", "invalid");
+            return response.setComplete();
+        } catch (MalformedJwtException e) {
+            log.warn("Malformed token: {}", e.getMessage());
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            response.getHeaders().add("X-Token-Error", "malformed");
+            return response.setComplete();
         } catch (Exception e) {
             log.error("Token validation failed: {}", e.getMessage());
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -105,14 +136,49 @@ public class JwtAuthenticationFilter implements GatewayFilter, Ordered {
                 .getPayload();
     }
 
+    private String extractUserId(String token) {
+        try {
+            Claims claims = validateToken(token);
+            return claims.get("userId", String.class);
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    private String extractEmail(String token) {
+        try {
+            Claims claims = validateToken(token);
+            return claims.getSubject();
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    private String extractRole(String token) {
+        try {
+            Claims claims = validateToken(token);
+            String role = claims.get("role", String.class);
+            return role != null ? role : "USER";
+        } catch (Exception e) {
+            return "USER";
+        }
+    }
+
+    private String generateCorrelationId() {
+        return java.util.UUID.randomUUID().toString().substring(0, 8);
+    }
+
     private boolean isPublicEndpoint(String path) {
-        // Проверяем точные совпадения
         if (PUBLIC_ENDPOINTS.stream().anyMatch(path::equals)) {
             return true;
         }
-
-        // Проверяем паттерны
         return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+    }
+
+    // Очистка кэша (периодическая)
+    public void clearCache() {
+        validTokenCache.clear();
+        log.info("Token cache cleared");
     }
 
     @Override
