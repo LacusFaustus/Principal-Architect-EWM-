@@ -5,6 +5,8 @@ server:
 spring:
   lifecycle:
     timeout-per-shutdown-phase: 30s
+
+  # === GRAPHQL ===
   graphql:
     graphiql:
       enabled: true
@@ -17,11 +19,12 @@ spring:
         enabled: true
     servlet:
       mapping: /graphql
+
+  # === APPLICATION ===
   application:
     name: event-service
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+  # === DATASOURCE ===
   datasource:
     url: jdbc:postgresql://event-db:5432/eventdb
     username: event
@@ -33,6 +36,9 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
+      pool-name: EventServiceHikariPool
+
+  # === JPA ===
   jpa:
     hibernate:
       ddl-auto: validate
@@ -45,9 +51,15 @@ spring:
           batch_size: 50
         order_inserts: true
         order_updates: true
+        default_schema: public
+
+  # === LIQUIBASE ===
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.xml
+    default-schema: public
+
+  # === REDIS ===
   redis:
     host: redis
     port: 6379
@@ -58,11 +70,18 @@ spring:
         max-active: 20
         max-idle: 10
         min-idle: 5
+        max-wait: 1000ms
+
+  # === CACHE ===
   cache:
     type: redis
     redis:
       time-to-live: 600000
       cache-null-values: false
+      use-key-prefix: true
+      key-prefix: "event:"
+
+  # === KAFKA ===
   kafka:
     bootstrap-servers: kafka:9092
     producer:
@@ -70,12 +89,30 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         spring.json.add.type.headers: false
+        acks: all
+        retries: 3
+        batch-size: 16384
+        linger-ms: 1
+        buffer-memory: 33554432
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.type.mapping: "userAction:ru.practicum.ewm.stats.avro.UserActionAvro"
+      group-id: event-service-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+
+  # === ZIPKIN (Distributed Tracing) ===
   zipkin:
     base-url: http://zipkin:9411
     sender:
       type: web
     service:
       name: event-service
+
+  # === SLEUTH ===
   sleuth:
     sampler:
       probability: 1.0
@@ -91,12 +128,15 @@ spring:
     propagation:
       type: w3c
 
+# === EUREKA ===
 eureka:
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/
     register-with-eureka: true
     fetch-registry: true
+    healthcheck:
+      enabled: true
   instance:
     prefer-ip-address: true
     lease-renewal-interval-in-seconds: 10
@@ -104,7 +144,9 @@ eureka:
     metadata-map:
       zone: docker
       version: ${spring.application.version:latest}
+      instance-id: ${spring.application.name}:${random.value}
 
+# === GRPC ===
 grpc:
   client:
     collector:
@@ -118,6 +160,7 @@ grpc:
       keepAliveWithoutCalls: true
       negotiationType: plaintext
 
+# === RESILIENCE4J ===
 resilience4j:
   circuitbreaker:
     instances:
@@ -126,11 +169,19 @@ resilience4j:
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10000
         permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        record-exceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
+        ignore-exceptions:
+          - ru.practicum.handler.exception.NotFoundException
       requestService:
         sliding-window-size: 10
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10000
         permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
       statService:
         sliding-window-size: 10
         failure-rate-threshold: 50
@@ -143,28 +194,74 @@ resilience4j:
         wait-duration: 1000
         retry-exceptions:
           - org.springframework.web.client.HttpServerErrorException
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
       requestService:
         max-attempts: 3
         wait-duration: 1000
         retry-exceptions:
           - org.springframework.web.client.HttpServerErrorException
+          - java.net.ConnectException
+      statService:
+        max-attempts: 3
+        wait-duration: 1000
+        retry-exceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.net.ConnectException
+  timelimiter:
+    instances:
+      userService:
+        timeout-duration: 5s
+      requestService:
+        timeout-duration: 5s
+      statService:
+        timeout-duration: 5s
 
+# === MANAGEMENT (Actuator) ===
 management:
   endpoints:
     web:
       exposure:
         include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
   metrics:
     export:
       prometheus:
         enabled: true
     tags:
       application: event-service
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 10ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s
   tracing:
     enabled: true
     sampling:
       probability: 1.0
 
+# === FEATURE FLAGS ===
+feature:
+  recommendations:
+    enabled: true
+  new-ui:
+    enabled: false
+  comments-moderation:
+    enabled: true
+  analytics:
+    enabled: true
+
+# === LOGGING ===
 logging:
   level:
     ru.practicum: INFO
@@ -173,5 +270,8 @@ logging:
     org.springframework.cloud.sleuth: DEBUG
     org.apache.kafka: WARN
     org.springframework.graphql: DEBUG
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN
+    io.lettuce.core: WARN
   pattern:
     console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr([${spring.zipkin.service.name:${spring.application.name:-}},%X{traceId:-},%X{spanId:-},%X{X-B3-Sampled:-}]){yellow} %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"

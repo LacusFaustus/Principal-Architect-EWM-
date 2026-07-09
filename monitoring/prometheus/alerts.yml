@@ -1,0 +1,125 @@
+groups:
+  - name: ewm_application_alerts
+    interval: 30s
+    rules:
+      # === SERVICE HEALTH ===
+      - alert: ServiceDown
+        expr: up{job=~".+"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute"
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) 
+          / sum(rate(http_server_requests_seconds_count[5m])) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High error rate in {{ $labels.application }}"
+          description: "Error rate is {{ $value | humanizePercentage }} in {{ $labels.application }}"
+
+      - alert: VeryHighErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) 
+          / sum(rate(http_server_requests_seconds_count[5m])) > 0.10
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Very high error rate in {{ $labels.application }}"
+          description: "Error rate is {{ $value | humanizePercentage }} in {{ $labels.application }}"
+
+      # === LATENCY ===
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, application)) > 1
+        for: 3m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High latency in {{ $labels.application }}"
+          description: "P95 latency is {{ $value }}s in {{ $labels.application }}"
+
+      - alert: CriticalLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, application)) > 2
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Critical latency in {{ $labels.application }}"
+          description: "P95 latency is {{ $value }}s in {{ $labels.application }}"
+
+      # === DISK SPACE ===
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Disk space is low"
+          description: "Available disk space is {{ $value }}% on {{ $labels.device }}"
+
+      # === DATABASE CONNECTIONS ===
+      - alert: TooManyDbConnections
+        expr: sum(hikaricp_connections) > 80
+        for: 2m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Too many database connections"
+          description: "Database connections: {{ $value }}"
+
+      # === BUSINESS METRICS ===
+      - alert: LowEventCreation
+        expr: rate(events_created_total[30m]) < 1
+        for: 30m
+        labels:
+          severity: warning
+          team: product
+        annotations:
+          summary: "Low event creation rate"
+          description: "Less than 1 event per 30 minutes"
+
+      - alert: NoNewUsers
+        expr: rate(users_registered_total[1h]) == 0
+        for: 1h
+        labels:
+          severity: warning
+          team: product
+        annotations:
+          summary: "No new users registered"
+          description: "No new users registered in the last hour"
+
+      # === JVM ===
+      - alert: HighJvmMemory
+        expr: (jvm_memory_used_bytes / jvm_memory_max_bytes) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High JVM memory usage"
+          description: "Memory usage is {{ $value }}% in {{ $labels.application }}"
+
+      - alert: HighGcTime
+        expr: rate(jvm_gc_pause_seconds_sum[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High GC time"
+          description: "GC time is {{ $value }}s/5min in {{ $labels.application }}"
